@@ -27,7 +27,7 @@ pub fn[T] Nullable::unwrap(self : Nullable[T]) -> T {
 ///|
 #cfg(target="js")
 pub fn[T] Nullable::to_option(self : Nullable[T]) -> T? {
-  guard not(Value::cast_from(self).is_null()) else { None }
+  guard !Value::cast_from(self).is_null() else { None }
   Some(self.unwrap())
 }
 
