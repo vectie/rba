@@ -1,0 +1,8 @@
+use = [
+  "./doc",
+  "./examples/shiki_editor",
+  "./examples/SSR",
+  "./rabbita",
+  "./website",
+  "./utils/shiki",
+]

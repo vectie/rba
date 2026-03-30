@@ -1,5 +1,5 @@
 {
-  "name": "user/app",
+  "name": "example/shiki_editor",
   "version": "0.2.0",
   "deps": {
     "moonbit-community/rabbita": {

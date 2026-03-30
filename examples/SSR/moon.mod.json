@@ -1,5 +1,5 @@
 {
-  "name": "user/app",
+  "name": "example/ssr",
   "version": "0.2.0",
   "deps": {
     "moonbit-community/rabbita": {
