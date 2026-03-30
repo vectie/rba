@@ -6,3 +6,4 @@ members = [
   "./website",
   "./utils/shiki",
 ]
+preferred_target = "js"

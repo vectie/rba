@@ -9,6 +9,8 @@ import {
 
 warnings = "-unused_package"
 
+supported_targets = "js+native"
+
 options(
   "is-main": true,
   targets: { "client.mbt": [ "js" ], "server.mbt": [ "native" ] },

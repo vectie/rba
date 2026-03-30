@@ -7,6 +7,8 @@ import {
   "Yoorkin/shiki",
 }
 
+supported_targets = "js"
+
 options(
   "is-main": true,
 )

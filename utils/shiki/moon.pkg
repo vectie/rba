@@ -4,3 +4,5 @@ import {
   "moonbit-community/rabbita",
   "moonbitlang/core/ref",
 }
+
+supported_targets = "js"

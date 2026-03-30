@@ -11,6 +11,8 @@ import {
   "moonbit-community/cmark/cmark_base",
 }
 
+supported_targets = "js"
+
 options(
   "is-main": true,
 )

@@ -12,3 +12,5 @@ import {
 import {
   "moonbitlang/core/list",
 } for "test"
+
+supported_targets = "js+native"

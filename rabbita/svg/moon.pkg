@@ -4,3 +4,5 @@ import {
   "moonbit-community/rabbita/dom",
   "moonbit-community/rabbita/html",
 }
+
+supported_targets = "js+native"
