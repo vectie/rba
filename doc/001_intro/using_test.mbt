@@ -1,8 +1,8 @@
 ///|
-using @rabbita {type Dispatch, type Html, type Cell}
+using @rabbita {type Cell}
 
 ///|
-using @html {div, h1, p, button}
+using @html {div, h1, button}
 
 ///|
 test {

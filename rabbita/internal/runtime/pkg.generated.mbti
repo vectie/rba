@@ -38,11 +38,7 @@ pub fn Flags::id(Self) -> Id
 pub fn Flags::mark_dirty(Self) -> Unit
 pub fn Flags::new() -> Self
 
-type Id
-pub impl Compare for Id
-pub impl Eq for Id
-pub impl Hash for Id
-pub impl Show for Id
+type Id derive(Compare, Eq, Hash, Show)
 
 pub struct Props {
   handlers : Map[String, (@dom.Event, &Scheduler) -> Unit]

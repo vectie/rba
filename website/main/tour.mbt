@@ -64,7 +64,7 @@ fn strip_base(path : String) -> String {
   let base = site_base_url() // e.g. "/rabbita/" or "/"
   // strip_len = length of prefix to remove (base minus its leading "/")
   let strip_len = base.length() - 1
-  if strip_len <= 0 || not(("/" + path).has_prefix(base)) {
+  if strip_len <= 0 || !("/" + path).has_prefix(base) {
     return path
   }
   let buf = StringBuilder::new()
@@ -205,7 +205,7 @@ fn extract_toc(src : String) -> Array[TocEntry] {
           Some(Id(s)) => s
           None => ""
         }
-        if level >= 2 && level <= 3 && not(s.is_empty()) {
+        if level >= 2 && level <= 3 && !s.is_empty() {
           toc.push({ level, text: inline_to_text(inline), id: s })
         }
       }

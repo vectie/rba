@@ -100,7 +100,7 @@ struct Model {
 ///|
 fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
   match msg {
-    ToggleMenu => (@rabbita.none, { ..model, menu_open: not(model.menu_open) })
+    ToggleMenu => (@rabbita.none, { ..model, menu_open: !model.menu_open })
     CycleTheme =>
       (
         @rabbita.none,
@@ -126,7 +126,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
             @rabbita.none,
             {
               ..model,
-              page: Home({ ..hm, cmp_idx: i, cmp_anim: not(hm.cmp_anim) }),
+              page: Home({ ..hm, cmp_idx: i, cmp_anim: !hm.cmp_anim }),
             },
           )
         _ => (@rabbita.none, model)
@@ -140,7 +140,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
               ..model,
               page: Home({
                 ..hm,
-                cmp_anim: not(hm.cmp_anim),
+                cmp_anim: !hm.cmp_anim,
                 cmp_idx: (hm.cmp_idx + 1) % cmp_entries.length(),
               }),
             },
@@ -168,7 +168,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
           let chs = model.chapters
           let path = if i < chs.length() {
             chs[i].path
-          } else if not(chs.is_empty()) {
+          } else if !chs.is_empty() {
             chs[0].path
           } else {
             ""
@@ -218,7 +218,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         }
         // Only fetch when switching chapters or content not yet loaded
         let already_loaded = match model.page {
-          Tour(tm) => tm.chapter_idx == idx && not(tm.content.is_empty())
+          Tour(tm) => tm.chapter_idx == idx && !tm.content.is_empty()
           _ => false
         }
         if already_loaded {
@@ -1013,7 +1013,8 @@ fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
 ///|
 /// NOTE: This program is only available in the js backend,
 /// see README.md to get started.
-async fn main {
+#warnings("-alert_unstable")
+fn main {
   let (dispatch, app) = @rabbita.cell_with_dispatch(
     model={
       menu_open: false,

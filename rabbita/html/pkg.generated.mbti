@@ -545,9 +545,7 @@ pub fn Mouse::screen_pos(Self) -> Pos
 pub(all) struct Pos {
   x : Int
   y : Int
-}
-pub impl Show for Pos
-pub impl @debug.Debug for Pos
+} derive(Show, @debug.Debug)
 
 pub(all) enum Scope {
   Row

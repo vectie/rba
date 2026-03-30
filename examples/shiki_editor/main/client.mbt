@@ -227,7 +227,8 @@ let initial_model : Model = {
 }
 
 ///|
-async fn main {
+#warnings("-alert_unstable")
+fn main {
   let (dispatch, app) = @rabbita.simple_cell_with_dispatch(
     model=initial_model,
     update~,

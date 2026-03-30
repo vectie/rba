@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "user/app/main"
+package "rabbita/website/main"
 
 // Values
 pub let init_tour : TourModel
@@ -23,10 +23,15 @@ type Theme
 
 type TocEntry
 
-type TourChapter
+pub(all) struct TourChapter {
+  title : String
+  path : String
+}
 
 pub(all) struct TourModel {
   chapter_idx : Int
+  content : String
+  failed : Bool
 }
 
 // Type aliases

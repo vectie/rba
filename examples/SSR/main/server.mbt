@@ -64,6 +64,7 @@ pub async fn server_main(
 }
 
 ///|
+#cfg(target="native")
 let path : String = match @env.args() {
   [] | [_] => "."
   [_, path, ..] => path

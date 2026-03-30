@@ -11,11 +11,7 @@ pub(all) enum Variant {
   Integer(Int)
   Floating(Double)
   String(String)
-}
-pub impl Compare for Variant
-pub impl Eq for Variant
-pub impl Hash for Variant
-pub impl Show for Variant
+} derive(Compare, Eq, Hash, Show)
 
 // Type aliases
 
