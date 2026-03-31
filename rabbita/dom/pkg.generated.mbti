@@ -517,6 +517,7 @@ pub impl @js.Cast for WheelEvent
 type Window
 pub fn Window::alert(Self, String) -> Unit
 pub fn Window::cancel_animation_frame(Self, Double) -> Unit
+pub fn Window::clear_interval(Self, Int) -> Unit
 pub fn Window::confirm(Self, String) -> Bool
 pub fn Window::current_url(Self) -> String
 pub fn Window::history_go_back(Self) -> Unit
@@ -531,6 +532,7 @@ pub fn Window::scroll_by(Self, Int, Int) -> Unit
 pub fn Window::scroll_to(Self, Int, Int) -> Unit
 pub fn Window::scroll_to_bottom(Self) -> Unit
 pub fn Window::scroll_to_top(Self) -> Unit
+pub fn Window::set_interval(Self, () -> Unit, Int) -> Int
 pub fn Window::to_event_target(Self) -> EventTarget
 pub impl IsEventTarget for Window
 pub impl @js.Cast for Window

@@ -2,7 +2,6 @@
 package "moonbit-community/rabbita/svg"
 
 import {
-  "moonbit-community/rabbita/dom",
   "moonbit-community/rabbita/html",
   "moonbit-community/rabbita/internal/runtime",
 }
@@ -208,7 +207,6 @@ pub fn Attrs::glyph_orientation_horizontal(Self, String) -> Self
 pub fn Attrs::glyph_orientation_vertical(Self, String) -> Self
 pub fn Attrs::gradient_transform(Self, String) -> Self
 pub fn Attrs::gradient_units(Self, String) -> Self
-pub fn Attrs::handler(Self, String, (@dom.Event, &@runtime.Scheduler) -> Unit) -> Self
 pub fn Attrs::height(Self, String) -> Self
 pub fn Attrs::href(Self, String) -> Self
 pub fn Attrs::hreflang(Self, String) -> Self

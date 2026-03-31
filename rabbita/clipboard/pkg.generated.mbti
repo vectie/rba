@@ -2,13 +2,13 @@
 package "moonbit-community/rabbita/clipboard"
 
 import {
-  "moonbit-community/rabbita/internal/runtime",
+  "moonbit-community/rabbita/cmd",
 }
 
 // Values
-pub fn copy(Item, copied? : @runtime.Cmd, failed? : (String) -> @runtime.Cmd) -> @runtime.Cmd
+pub fn copy(Item, copied? : @cmd.Cmd, failed? : (String) -> @cmd.Cmd) -> @cmd.Cmd
 
-pub fn paste(pasted~ : (Item) -> @runtime.Cmd, failed? : (String) -> @runtime.Cmd) -> @runtime.Cmd
+pub fn paste(pasted~ : (Item) -> @cmd.Cmd, failed? : (String) -> @cmd.Cmd) -> @cmd.Cmd
 
 // Errors
 

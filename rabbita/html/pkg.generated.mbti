@@ -2,6 +2,7 @@
 package "moonbit-community/rabbita/html"
 
 import {
+  "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/dom",
   "moonbit-community/rabbita/internal/runtime",
   "moonbitlang/core/debug",
@@ -33,13 +34,13 @@ pub fn[C : IsChildren] bdo(style? : Array[String], id? : String, class? : String
 
 pub fn[C : IsChildren] blockquote(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] body(style? : Array[String], id? : String, class? : String, title? : String, lang? : String, dir? : String, hidden? : Bool, on_scroll? : (Scroll) -> @runtime.Cmd, on_keydown? : (Keyboard) -> @runtime.Cmd, on_keyup? : (Keyboard) -> @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] body(style? : Array[String], id? : String, class? : String, title? : String, lang? : String, dir? : String, hidden? : Bool, on_scroll? : @cmd.Dispatch[Scroll], on_keydown? : @cmd.Dispatch[Keyboard], on_keyup? : @cmd.Dispatch[Keyboard], attrs? : Attrs, C) -> Html
 
 pub fn br(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs) -> Html
 
-pub fn[C : IsChildren] button(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, type_? : String, disabled? : Bool, name? : String, value? : String, autofocus? : Bool, on_click? : @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] button(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, type_? : String, disabled? : Bool, name? : String, value? : String, autofocus? : Bool, on_click? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] canvas(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_mousedown? : (Mouse) -> @runtime.Cmd, on_mouseup? : (Mouse) -> @runtime.Cmd, on_scroll? : (Scroll) -> @runtime.Cmd, on_keydown? : (Keyboard) -> @runtime.Cmd, on_keyup? : (Keyboard) -> @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] canvas(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_mousedown? : @cmd.Dispatch[Mouse], on_mouseup? : @cmd.Dispatch[Mouse], on_scroll? : @cmd.Dispatch[Scroll], on_keydown? : @cmd.Dispatch[Keyboard], on_keyup? : @cmd.Dispatch[Keyboard], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] caption(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -63,9 +64,9 @@ pub fn[C : IsChildren] details(style? : Array[String], id? : String, class? : St
 
 pub fn[C : IsChildren] dfn(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] dialog(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, open? : Bool, on_close? : (String) -> @runtime.Cmd, on_cancel? : @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] dialog(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, open? : Bool, on_close? : @cmd.Dispatch[String], on_cancel? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] div(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @runtime.Cmd, on_mousedown? : (Mouse) -> @runtime.Cmd, on_mouseup? : (Mouse) -> @runtime.Cmd, on_scroll? : (Scroll) -> @runtime.Cmd, on_keydown? : (Keyboard) -> @runtime.Cmd, on_keyup? : (Keyboard) -> @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] div(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @cmd.Cmd, on_mousedown? : @cmd.Dispatch[Mouse], on_mouseup? : @cmd.Dispatch[Mouse], on_scroll? : @cmd.Dispatch[Scroll], on_keydown? : @cmd.Dispatch[Keyboard], on_keyup? : @cmd.Dispatch[Keyboard], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] dl(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -85,7 +86,7 @@ pub fn[C : IsChildren] figure(style? : Array[String], id? : String, class? : Str
 
 pub fn[C : IsChildren] footer(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] form(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, action? : String, name? : String, on_submit? : @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] form(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, action? : String, name? : String, on_submit? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
 pub fn fragment(Array[Html]) -> Html
 
@@ -119,7 +120,7 @@ pub fn iframe(style? : Array[String], id? : String, class? : String, hidden? : B
 
 pub fn[C : IsChildren] img(style? : Array[String], id? : String, class? : String, hidden? : Bool, src? : String, alt? : String, title? : String, width? : Int, height? : Int, srcset? : String, sizes? : String, loading? : String, decoding? : String, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] input(input_type? : InputType, name? : String, value? : String, checked? : Bool, read_only? : Bool, multiple? : Bool, accept? : String, placeholder? : String, auto_complete? : AutoComplete, style? : Array[String], max? : Int, min? : Int, step? : Int, maxlength? : Int, minlength? : Int, pattern? : String, size? : Int, width? : Int, height? : Int, id? : String, class? : String, title? : String, hidden? : Bool, required? : Bool, autofocus? : Bool, list? : String, inputmode? : String, on_change? : (String) -> @runtime.Cmd, on_input? : (String) -> @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] input(input_type? : InputType, name? : String, value? : String, checked? : Bool, read_only? : Bool, multiple? : Bool, accept? : String, placeholder? : String, auto_complete? : AutoComplete, style? : Array[String], max? : Int, min? : Int, step? : Int, maxlength? : Int, minlength? : Int, pattern? : String, size? : Int, width? : Int, height? : Int, id? : String, class? : String, title? : String, hidden? : Bool, required? : Bool, autofocus? : Bool, list? : String, inputmode? : String, on_change? : @cmd.Dispatch[String], on_input? : @cmd.Dispatch[String], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] ins(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -129,7 +130,7 @@ pub fn[C : IsChildren] label(style? : Array[String], id? : String, class? : Stri
 
 pub fn[C : IsChildren] legend(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] li(style? : Array[String], value? : Int, id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] li(style? : Array[String], value? : Int, id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
 pub fn link(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, href? : String, rel? : String, type_? : String, media? : String, sizes? : String, attrs? : Attrs) -> Html
 
@@ -191,7 +192,7 @@ pub fn[C : IsChildren] search(style? : Array[String], id? : String, class? : Str
 
 pub fn[C : IsChildren] section(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] select(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, disabled? : Bool, name? : String, multiple? : Bool, size? : Int, required? : Bool, autofocus? : Bool, on_change? : (String) -> @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] select(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, disabled? : Bool, name? : String, multiple? : Bool, size? : Int, required? : Bool, autofocus? : Bool, on_change? : @cmd.Dispatch[String], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] selectedcontent(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -225,7 +226,7 @@ pub fn[C : IsChildren] template(style? : Array[String], id? : String, class? : S
 
 pub fn text(String) -> Html
 
-pub fn[C : IsChildren] textarea(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, name? : String, value? : String, rows? : Int, cols? : Int, placeholder? : String, read_only? : Bool, disabled? : Bool, maxlength? : Int, minlength? : Int, required? : Bool, autofocus? : Bool, wrap? : String, on_change? : (String) -> @runtime.Cmd, on_input? : (String) -> @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] textarea(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, name? : String, value? : String, rows? : Int, cols? : Int, placeholder? : String, read_only? : Bool, disabled? : Bool, maxlength? : Int, minlength? : Int, required? : Bool, autofocus? : Bool, wrap? : String, on_change? : @cmd.Dispatch[String], on_input? : @cmd.Dispatch[String], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] tfoot(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -243,7 +244,7 @@ pub fn track(style? : Array[String], id? : String, class? : String, title? : Str
 
 pub fn[C : IsChildren] u(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] ul(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @runtime.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] ul(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] var_(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -368,7 +369,6 @@ pub fn Attrs::formenctype(Self, String) -> Self
 pub fn Attrs::formmethod(Self, String) -> Self
 pub fn Attrs::formnovalidate(Self, Bool) -> Self
 pub fn Attrs::formtarget(Self, String) -> Self
-pub fn Attrs::handler(Self, String, (@dom.Event, &@runtime.Scheduler) -> Unit) -> Self
 pub fn Attrs::headers(Self, String) -> Self
 pub fn Attrs::height(Self, Int) -> Self
 pub fn Attrs::hidden(Self, Bool) -> Self
@@ -407,39 +407,39 @@ pub fn Attrs::muted(Self, Bool) -> Self
 pub fn Attrs::name(Self, String) -> Self
 pub fn Attrs::nonce(Self, String) -> Self
 pub fn Attrs::novalidate(Self, Bool) -> Self
-pub fn Attrs::on_blur(Self, (@dom.FocusEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_change(Self, (@dom.InputEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_click(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_compositionend(Self, (@dom.CompositionEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_compositionstart(Self, (@dom.CompositionEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_compositionupdate(Self, (@dom.CompositionEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_contextmenu(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_copy(Self, (@dom.ClipboardEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_cut(Self, (@dom.ClipboardEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dbclick(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dblclick(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dragend(Self, (@dom.DragEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dragenter(Self, (@dom.DragEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dragleave(Self, (@dom.DragEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dragover(Self, (@dom.DragEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_dragstart(Self, (@dom.DragEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_drop(Self, (@dom.DragEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_focus(Self, (@dom.FocusEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_input(Self, (@dom.InputEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_keydown(Self, (@dom.KeyboardEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_keyup(Self, (@dom.KeyboardEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mousedown(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mouseenter(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mouseleave(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mousemove(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mouseout(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mouseover(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_mouseup(Self, (@dom.MouseEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_paste(Self, (@dom.ClipboardEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_reset(Self, (@dom.Event) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_scroll(Self, (@dom.UIEvent) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_submit(Self, (@dom.Event) -> @runtime.Cmd) -> Self
-pub fn Attrs::on_wheel(Self, (@dom.WheelEvent) -> @runtime.Cmd) -> Self
+pub fn Attrs::on_blur(Self, (@dom.FocusEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_change(Self, (@dom.InputEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_click(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_compositionend(Self, (@dom.CompositionEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_compositionstart(Self, (@dom.CompositionEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_compositionupdate(Self, (@dom.CompositionEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_contextmenu(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_copy(Self, (@dom.ClipboardEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_cut(Self, (@dom.ClipboardEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dbclick(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dblclick(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dragend(Self, (@dom.DragEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dragenter(Self, (@dom.DragEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dragleave(Self, (@dom.DragEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dragover(Self, (@dom.DragEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_dragstart(Self, (@dom.DragEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_drop(Self, (@dom.DragEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_focus(Self, (@dom.FocusEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_input(Self, (@dom.InputEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_keydown(Self, (@dom.KeyboardEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_keyup(Self, (@dom.KeyboardEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mousedown(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mouseenter(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mouseleave(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mousemove(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mouseout(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mouseover(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_mouseup(Self, (@dom.MouseEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_paste(Self, (@dom.ClipboardEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_reset(Self, (@dom.Event) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_scroll(Self, (@dom.UIEvent) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_submit(Self, (@dom.Event) -> @cmd.Cmd) -> Self
+pub fn Attrs::on_wheel(Self, (@dom.WheelEvent) -> @cmd.Cmd) -> Self
 pub fn Attrs::open(Self, Bool) -> Self
 pub fn Attrs::optimum(Self, Int) -> Self
 pub fn Attrs::part(Self, String) -> Self

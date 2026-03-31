@@ -1,5 +1,5 @@
 ///|
-using @runtime {trait Scheduler, type Cmd}
+using @cmd {type Cmd}
 
 ///|
 #cfg(target="js")
@@ -66,7 +66,7 @@ fn[Model] request(
   expect~ : Expecting[Cmd, Model],
   body~ : Body,
 ) -> Cmd {
-  let launch = fn(scheduler : &Scheduler) {
+  let launch = fn(scheduler : @cmd.Scheduler) {
     let has_body = match body {
       Empty => false
       _ => true
@@ -101,7 +101,7 @@ fn[Model] request(
         )
     }
   }
-  @runtime.effect(kind=Immediately, launch)
+  @cmd.custom_cmd(kind=Immediately, launch)
 }
 
 ///|

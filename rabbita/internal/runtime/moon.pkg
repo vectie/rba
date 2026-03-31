@@ -6,4 +6,5 @@ import {
   "moonbitlang/core/random",
   "moonbitlang/core/ref",
   "moonbit-community/rabbita/js",
+  "moonbit-community/rabbita/internal/interface",
 }

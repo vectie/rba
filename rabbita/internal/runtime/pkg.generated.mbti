@@ -3,19 +3,12 @@ package "moonbit-community/rabbita/internal/runtime"
 
 import {
   "moonbit-community/rabbita/dom",
+  "moonbit-community/rabbita/internal/interface",
   "moonbit-community/rabbita/url",
   "moonbit-community/rabbita/variant",
 }
 
 // Values
-pub fn batch(Array[Cmd]) -> Cmd
-
-pub fn effect((&Scheduler) -> Unit, kind~ : EffectKind) -> Cmd
-
-pub fn message(Id, () -> Unit) -> Cmd
-
-pub let none : Cmd
-
 pub fn server_side_render(&IsCell) -> String
 
 // Errors
@@ -26,40 +19,35 @@ pub(all) enum Children[T] {
   Map(Map[String, T])
 }
 
-type Cmd
-
-pub(all) enum EffectKind {
-  Immediately
-  AfterRender
+pub(all) struct Flags {
+  id : @interface.Id
+  mut dirty : Bool
+  mut attach_count : Int
 }
-
-type Flags
-pub fn Flags::id(Self) -> Id
+pub fn Flags::id(Self) -> @interface.Id
 pub fn Flags::mark_dirty(Self) -> Unit
 pub fn Flags::new() -> Self
 
-type Id derive(Compare, Eq, Hash, Show)
-
 pub struct Props {
-  handlers : Map[String, (@dom.Event, &Scheduler) -> Unit]
+  handlers : Map[String, (@dom.Event, &@interface.Scheduler) -> Unit]
   attrs : Map[String, String]
   props : Map[String, @variant.Variant]
   styles : Map[String, String]
   // private fields
 }
 pub fn Props::copy(Self) -> Self
-pub fn Props::new(Map[String, String], Map[String, @variant.Variant], Map[String, String], Map[String, (@dom.Event, &Scheduler) -> Unit]) -> Self
+pub fn Props::new(Map[String, String], Map[String, @variant.Variant], Map[String, String], Map[String, (@dom.Event, &@interface.Scheduler) -> Unit]) -> Self
 
 pub(all) struct Sandbox {
   mut mount : String
-  mut on_url_changed : ((@url.Url) -> Cmd)?
-  mut on_url_request : ((@url.UrlRequest) -> Cmd)?
+  mut on_url_changed : ((@url.Url) -> Array[@interface.CustomCommand])?
+  mut on_url_request : ((@url.UrlRequest) -> Array[@interface.CustomCommand])?
   // private fields
 }
 pub fn Sandbox::flush(Self) -> Unit
 pub fn Sandbox::initialize(Self) -> Unit
 pub fn Sandbox::new(&IsCell) -> Self
-pub impl Scheduler for Sandbox
+pub impl @interface.Scheduler for Sandbox
 
 pub enum VNode {
   Elem(String, Props, Children[VNode], namespace_uri~ : String?)
@@ -77,13 +65,8 @@ pub fn VNode::text(String) -> Self
 
 // Traits
 pub(open) trait IsCell {
-  step(Self, &Scheduler) -> Unit
+  step(Self, &@interface.Scheduler) -> Unit
   view(Self) -> VNode
   flags(Self) -> Flags
-}
-
-pub trait Scheduler {
-  add(Self, Cmd) -> Unit
-  add_url_changed(Self, @url.Url) -> Unit
 }
 

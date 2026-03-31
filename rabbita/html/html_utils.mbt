@@ -27,14 +27,14 @@ fn push_click(value : Cmd?, attrs : Attrs) -> Unit {
 }
 
 ///|
-fn push_mousedown(value : ((Mouse) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_mousedown(value : @cmd.Dispatch[Mouse]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(attrs.on_mousedown(event => v(Mouse(event))))
   }
 }
 
 ///|
-fn push_mouseup(value : ((Mouse) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_mouseup(value : @cmd.Dispatch[Mouse]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(attrs.on_mouseup(event => v(Mouse(event))))
   }
@@ -42,7 +42,7 @@ fn push_mouseup(value : ((Mouse) -> Cmd)?, attrs : Attrs) -> Unit {
 
 ///|
 #cfg(target="js")
-fn push_scroll(value : ((Scroll) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_scroll(value : @cmd.Dispatch[Scroll]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(
       attrs.on_scroll(event => {
@@ -55,19 +55,19 @@ fn push_scroll(value : ((Scroll) -> Cmd)?, attrs : Attrs) -> Unit {
 
 ///|
 #cfg(not(target="js"))
-fn push_scroll(value : ((Scroll) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_scroll(value : @cmd.Dispatch[Scroll]?, attrs : Attrs) -> Unit {
   ignore((value, attrs))
 }
 
 ///|
-fn push_keydown(value : ((Keyboard) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_keydown(value : @cmd.Dispatch[Keyboard]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(attrs.on_keydown(event => v(Keyboard(event))))
   }
 }
 
 ///|
-fn push_keyup(value : ((Keyboard) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_keyup(value : @cmd.Dispatch[Keyboard]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(attrs.on_keyup(event => v(Keyboard(event))))
   }
@@ -80,7 +80,7 @@ fn push_submit(value : Cmd?, attrs : Attrs) -> Unit {
     ignore(
       attrs.handler("submit", (event, scheduler) => {
         event.prevent_default()
-        scheduler.add(v)
+        scheduler.add_cmds(v.to_array())
       }),
     )
   }
@@ -332,11 +332,11 @@ fn form_event_value(event : @dom.Event) -> String {
 
 ///|
 #cfg(target="js")
-fn push_change(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_change(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(
       attrs.handler("change", (event, scheduler) => {
-        scheduler.add(v(form_event_value(event)))
+        scheduler.add_cmds(v(form_event_value(event)).to_array())
       }),
     )
   }
@@ -344,17 +344,17 @@ fn push_change(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
 
 ///|
 #cfg(not(target="js"))
-fn push_change(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_change(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   ignore((value, attrs))
 }
 
 ///|
 #cfg(target="js")
-fn push_input(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_input(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(
       attrs.handler("input", (event, scheduler) => {
-        scheduler.add(v(form_event_value(event)))
+        scheduler.add_cmds(v(form_event_value(event)).to_array())
       }),
     )
   }
@@ -362,7 +362,7 @@ fn push_input(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
 
 ///|
 #cfg(not(target="js"))
-fn push_input(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_input(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   ignore((value, attrs))
 }
 
@@ -416,12 +416,12 @@ fn push_scope(value : Scope?, attrs : Attrs) -> Unit {
 
 ///|
 #cfg(target="js")
-fn push_close(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_close(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   if value is Some(close) {
     ignore(
       attrs.handler("close", (event, scheduler) => {
         let html_element = event.target().to_html_dialog_element().unwrap()
-        scheduler.add(close(html_element.return_value()))
+        scheduler.add_cmds(close(html_element.return_value()).to_array())
       }),
     )
   }
@@ -429,7 +429,7 @@ fn push_close(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
 
 ///|
 #cfg(not(target="js"))
-fn push_close(value : ((String) -> Cmd)?, attrs : Attrs) -> Unit {
+fn push_close(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   ignore((value, attrs))
 }
 
@@ -440,7 +440,7 @@ fn push_cancel(value : Cmd?, attrs : Attrs) -> Unit {
     ignore(
       attrs.handler("cancel", (event, scheduler) => {
         event.prevent_default()
-        scheduler.add(cancel)
+        scheduler.add_cmds(cancel.to_array())
       }),
     )
   }

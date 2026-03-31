@@ -6,7 +6,7 @@ pub using @cmd {perform, attempt, effect, delay}
 pub using @cmd {none, batch}
 
 ///|
-pub type Cmd = @runtime.Cmd
+pub type Cmd = @cmd.Cmd
 
 ///|
 pub type Html = @html.Html
@@ -55,12 +55,12 @@ pub fn App::with_route(
   .add_event_listener("popstate", _ => {
     guard (try? @url.parse(@dom.window().current_url())) is Ok(url)
     match url_changed {
-      Some(f) => self.sandbox.add(f(url))
+      Some(f) => self.sandbox.add_cmds(f(url).to_array())
       None => ()
     }
   })
-  self.sandbox.on_url_changed = url_changed.map(f => url => f(url))
-  self.sandbox.on_url_request = url_request.map(f => url => f(url))
+  self.sandbox.on_url_changed = url_changed.map(f => url => f(url).to_array())
+  self.sandbox.on_url_request = url_request.map(f => url => f(url).to_array())
   if self.sandbox.mount != "" {
     self.trigger_initial_url_changed()
   }
@@ -89,7 +89,7 @@ pub fn App::mount(self : Self, element_id : String) -> Unit {
   .unwrap()
   .set_inner_html("<div></div>")
   if self.init_cmd is Some(cmd) {
-    self.sandbox.add(cmd)
+    self.sandbox.add_cmds(cmd.to_array())
     self.init_cmd = None
   }
   self.sandbox.initialize()

@@ -1,5 +1,34 @@
 ///|
-pub using @runtime {trait Scheduler, type EffectKind}
+struct Scheduler(&@interface.Scheduler)
+
+///|
+pub fn Scheduler::add(self : Self, cmd : Cmd) -> Unit {
+  self.0.add_cmds(cmd.to_array())
+}
+
+///|
+pub fn Scheduler::add_url_changed(self : Self, url : @url.Url) -> Unit {
+  self.0.add_url_changed(url)
+}
+
+///|
+pub(all) enum EffectKind {
+  Immediately
+  AfterRender
+}
+
+///|
+/// A deferred command handled by the Rabbita runtime.
+///
+/// `Cmd` models side effects in the update loop. Commands are returned from
+/// `update` or embedded in `Html` event handlers, and are executed later by
+/// the runtime.
+struct Cmd(Array[@interface.CustomCommand])
+
+///|
+pub fn Cmd::to_array(self : Cmd) -> Array[@interface.CustomCommand] {
+  self.0
+}
 
 ///|
 pub let immediately : EffectKind = Immediately
@@ -8,22 +37,14 @@ pub let immediately : EffectKind = Immediately
 pub let after_render : EffectKind = AfterRender
 
 ///|
-/// A deferred command handled by the Rabbita runtime.
-///
-/// `Cmd` models side effects in the update loop. Commands are returned from
-/// `update` or embedded in `Html` event handlers, and are executed later by
-/// the runtime.
-pub type Cmd = @runtime.Cmd
-
-///|
 /// A command that does nothing.
-pub let none : Cmd = @runtime.none
+pub let none : Cmd = []
 
 ///|
 /// Combine multiple commands into one command.
 #inline
 pub fn batch(cmds : Array[Cmd]) -> Cmd {
-  @runtime.batch(cmds)
+  cmds.iter().flat_map(x => x.0.iter()).collect()
 }
 
 ///|
@@ -53,18 +74,22 @@ pub fn batch(cmds : Array[Cmd]) -> Cmd {
 /// }
 /// ```
 #inline
-pub fn raw_effect(
-  callback : (&Scheduler) -> Unit,
-  kind? : EffectKind = Immediately,
+#alias(raw_effect, deprecated)
+pub fn custom_cmd(
+  callback : (Scheduler) -> Unit,
+  kind? : EffectKind = EffectKind::Immediately,
 ) -> Cmd {
-  @runtime.effect(callback, kind~)
+  match kind {
+    Immediately => [@interface.Immediately(scheduler => callback(scheduler))]
+    AfterRender => [@interface.AfterRender(scheduler => callback(scheduler))]
+  }
 }
 
 ///|
 /// Create a command that runs an effectful async function
 #cfg(target="js")
 pub fn effect(f : async () -> Unit noraise) -> Cmd {
-  raw_effect(_ => @js.async_run(() => f()))
+  custom_cmd(_ => @js.async_run(() => f()))
 }
 
 ///|
@@ -74,7 +99,7 @@ pub fn effect(f : async () -> Unit noraise) -> Cmd {
 /// command by `msg` and scheduled back into the update loop.
 #cfg(target="js")
 pub fn[A] perform(msg : (A) -> Cmd, f : async () -> A noraise) -> Cmd {
-  raw_effect(scheduler => @js.async_run(() => scheduler.add(msg(f()))))
+  custom_cmd(scheduler => @js.async_run(() => scheduler.add(msg(f()))))
 }
 
 ///|
@@ -86,7 +111,7 @@ pub fn[A, E : Error] attempt(
   msg : (Result[A, E]) -> Cmd,
   f : async () -> A raise E,
 ) -> Cmd {
-  raw_effect(scheduler => {
+  custom_cmd(scheduler => {
     @js.async_run(() => {
       let msg = try f() catch {
         e => msg(Err(e))
@@ -104,7 +129,7 @@ pub fn[A, E : Error] attempt(
 /// The delayed command is added back to the message queue after the timer fires.
 #cfg(target="js")
 pub fn delay(cmd : Cmd, ms : Int) -> Cmd {
-  raw_effect(scheduler => set_timeout(() => scheduler.add(cmd), ms))
+  custom_cmd(scheduler => set_timeout(() => scheduler.add(cmd), ms))
 }
 
 ///|

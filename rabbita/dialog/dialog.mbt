@@ -4,7 +4,7 @@
 /// The `modal` argument determines whether the dialog is modal or not.
 #cfg(target="js")
 pub fn show(id : String, modal? : Bool = true) -> Cmd {
-  @runtime.effect(kind=AfterRender, _ => {
+  @cmd.custom_cmd(kind=AfterRender, _ => {
     let dialog = @dom.document()
       .get_element_by_id(id)
       .unwrap()
@@ -26,7 +26,7 @@ pub fn show(id : String, modal? : Bool = true) -> Cmd {
 /// The `return_value` argument is the value that will be filled in the `close` message.
 #cfg(target="js")
 pub fn close(id : String, return_value? : String) -> Cmd {
-  @runtime.effect(kind=AfterRender, _ => {
+  @cmd.custom_cmd(kind=AfterRender, _ => {
     match @dom.document().get_element_by_id(id).to_option() {
       None => ()
       Some(element) => {
@@ -50,7 +50,7 @@ pub fn close(id : String, return_value? : String) -> Cmd {
 /// The `return_value` argument is the value that will be filled in the `close` message.
 #cfg(target="js")
 pub fn request_close(id : String, return_value? : String) -> Cmd {
-  @runtime.effect(kind=AfterRender, _ => {
+  @cmd.custom_cmd(kind=AfterRender, _ => {
     let dialog = @dom.document()
       .get_element_by_id(id)
       .unwrap()

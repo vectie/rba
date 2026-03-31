@@ -2,6 +2,12 @@
 using @queue {type Queue}
 
 ///|
+using @interface {trait Scheduler, type CustomCommand, type Id, type InstId}
+
+///|
+using @url {type Url, type UrlRequest}
+
+///|
 /// The rendering pipeline will do the following step:
 ///
 /// 1. view(model) -> newView  
@@ -23,8 +29,8 @@ pub(all) struct Sandbox {
   priv root : Instance
   priv captured_link_listener : @dom.Listener
   mut mount : String
-  mut on_url_changed : ((Url) -> Cmd)?
-  mut on_url_request : ((UrlRequest) -> Cmd)?
+  mut on_url_changed : ((Url) -> Array[CustomCommand])?
+  mut on_url_request : ((UrlRequest) -> Array[CustomCommand])?
 }
 
 ///|
@@ -112,11 +118,11 @@ fn Sandbox::drop_live_subtree(self : Self, root : Instance) -> Unit {
   while stack.pop() is Some(inst) {
     let flags = inst.cell.flags()
     flags.attach_count -= 1
-    if self.live_map.get(flags.id()) is Some((_, insts)) {
+    if self.live_map.get(flags.id) is Some((_, insts)) {
       insts.remove(inst.id)
       if insts.is_empty() {
-        self.live_map.remove(flags.id())
-        self.dirty_set.remove(flags.id())
+        self.live_map.remove(flags.id)
+        self.dirty_set.remove(flags.id)
       }
     }
     // Removal can happen mid-diff; scan both old/new links to avoid leaving orphans.
@@ -141,7 +147,7 @@ fn Sandbox::drop_live_subtree(self : Self, root : Instance) -> Unit {
 fn Sandbox::add_url_request(self : Self, request : UrlRequest) -> Unit {
   match self.on_url_request {
     None => ()
-    Some(f) => self.add(f(request))
+    Some(f) => self.add_cmds(f(request))
   }
 }
 
@@ -195,12 +201,10 @@ pub fn Sandbox::flush(self : Self) -> Unit {
 ///|
 /// Run an effect immediately or pending a message.
 #cfg(target="js")
-pub impl Scheduler for Sandbox with add(self, cmd) {
+pub impl Scheduler for Sandbox with add_cmd(self, cmd : CustomCommand) {
   match cmd {
-    Empty => ()
-    Batch(xs) => xs.each(x => self.add(x))
-    Effect(effect, Immediately) => effect(self)
-    Effect(effect, AfterRender) => self.after_render_queue.push(effect)
+    Immediately(f) => f(self)
+    AfterRender(f) => self.after_render_queue.push(f)
     Message(id, send_message) => {
       send_message()
       self.msg_queue.push(id)
@@ -214,6 +218,6 @@ pub impl Scheduler for Sandbox with add(self, cmd) {
 pub impl Scheduler for Sandbox with add_url_changed(self, url) {
   match self.on_url_changed {
     None => ()
-    Some(f) => self.add(f(url))
+    Some(f) => self.add_cmds(f(url))
   }
 }

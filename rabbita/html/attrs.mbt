@@ -69,10 +69,10 @@ pub fn Attrs::style(self : Attrs, key : String, value : String) -> Attrs {
 
 ///|
 /// Set an event handler.
-pub fn Attrs::handler(
+fn Attrs::handler(
   self : Attrs,
   key : String,
-  value : (Event, &@runtime.Scheduler) -> Unit,
+  value : (Event, &@interface.Scheduler) -> Unit,
 ) -> Attrs {
   self.0.handlers[key] = value
   self

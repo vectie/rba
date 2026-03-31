@@ -1,29 +1,57 @@
 ///|
-using @runtime {trait IsCell}
-
-///|
 priv struct TypedCell[Model, Msg] {
   model : Ref[Model]
-  dispatcher : Dispatcher[Msg]
-  dispatch : (Msg) -> Cmd
+  dispatch : @cmd.Dispatch[Msg]
+  inbox : @queue.Queue[Msg]
   update : (Dispatch[Msg], Msg, Model) -> (Cmd, Model)
   view : (Dispatch[Msg], Model) -> @html.Html
+  subscriptions : ((Dispatch[Msg], Model) -> @sub.Sub)?
+  mut sub_map : SubscriptionMap
   flags : @runtime.Flags
 }
+
+///|
+type SubscriptionMap = Map[String, @interface.CustomSubscription]
 
 ///|
 /// Message dispatcher type used by a `Cell`.
 ///
 /// Calling `dispatch(msg)` returns a `Cmd` that enqueues `msg` into the cell's
 /// update loop.
-pub type Dispatch[Msg] = (Msg) -> Cmd
+pub type Dispatch[Msg] = @cmd.Dispatch[Msg]
 
 ///|
-impl[Model, Msg] IsCell for TypedCell[Model, Msg] with step(self, scheduler) {
-  if self.dispatcher.inbox.pop() is Some(msg) {
+fn diff_sub_maps(
+  new : SubscriptionMap,
+  old : SubscriptionMap,
+  scheduler : &@interface.Scheduler,
+) -> SubscriptionMap {
+  for key, sub in old {
+    if !new.contains(key) {
+      (sub.on_unload)(scheduler)
+    }
+  }
+  for key, sub in new {
+    if !old.contains(key) {
+      (sub.on_load)(scheduler)
+    }
+  }
+  new
+}
+
+///|
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with step(
+  self,
+  scheduler,
+) {
+  if self.inbox.pop() is Some(msg) {
     let (cmd, model) = (self.update)(self.dispatch, msg, self.model.val)
+    if self.subscriptions is Some(subscriptions) {
+      self.sub_map = subscriptions(self.dispatch, model).to_map()
+        |> diff_sub_maps(self.sub_map, scheduler)
+    }
     self.model.val = model
-    scheduler.add(cmd)
+    scheduler.add_cmds(cmd.to_array())
     self.flags.mark_dirty()
   } else {
     // violate the invariant
@@ -31,30 +59,18 @@ impl[Model, Msg] IsCell for TypedCell[Model, Msg] with step(self, scheduler) {
 }
 
 ///|
-impl[Model, Msg] IsCell for TypedCell[Model, Msg] with view(self) {
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with view(self) {
   (self.view)(self.dispatch, self.model.val).0
 }
 
 ///|
-impl[Model, Msg] IsCell for TypedCell[Model, Msg] with flags(self) {
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with flags(self) {
   self.flags
 }
 
 ///|
-priv struct Dispatcher[Msg] {
-  id : @runtime.Id
-  inbox : @queue.Queue[Msg]
-}
-
-///|
-fn[Msg] Dispatcher::message(self : Self[Msg], msg : Msg) -> Cmd {
-  // carry the drain (which own model and update) in message will cause memory leak in RC
-  @runtime.message(self.id, () => self.inbox.push(msg))
-}
-
-///|
 /// A cell that encapsulates model, update, and view.
-struct Cell(&IsCell)
+struct Cell(&@runtime.IsCell)
 
 ///|
 /// Render this cell as `Html`.
@@ -121,12 +137,27 @@ pub fn[Model, Msg] cell(
   model~ : Model,
   update~ : (Dispatch[Msg], Msg, Model) -> (Cmd, Model),
   view~ : (Dispatch[Msg], Model) -> Html,
+  subscriptions? : (Dispatch[Msg], Model) -> @sub.Sub,
 ) -> Cell {
   let flags = @runtime.Flags::new()
-  let dispatcher = { id: flags.id(), inbox: @queue.new() }
-  let dispatch = m => dispatcher.message(m)
+  let inbox = @queue.Queue::new()
+  let dispatch = @cmd.make_dispatcher(flags.id, inbox)
   let model = @ref.new(model)
-  Cell({ view, update, dispatcher, dispatch, model, flags })
+  // let sub_map = if subscriptions is Some(subscriptions) {
+  //   subscriptions(dispatch, model.val).to_map() |> diff_sub_maps({}, scheduler)
+  // } else {
+  //   {}
+  // }
+  Cell({
+    inbox,
+    view,
+    update,
+    dispatch,
+    model,
+    flags,
+    subscriptions,
+    sub_map: {},
+  })
 }
 
 ///|
@@ -190,12 +221,25 @@ pub fn[Model, Msg] cell_with_dispatch(
   model~ : Model,
   update~ : (Dispatch[Msg], Msg, Model) -> (Cmd, Model),
   view~ : (Dispatch[Msg], Model) -> Html,
+  subscriptions? : (Dispatch[Msg], Model) -> @sub.Sub,
 ) -> (Dispatch[Msg], Cell) {
   let flags = @runtime.Flags::new()
-  let dispatcher = { id: flags.id(), inbox: @queue.new() }
-  let dispatch = m => dispatcher.message(m)
+  let inbox = @queue.Queue::new()
+  let dispatch = @cmd.make_dispatcher(flags.id, inbox)
   let model = @ref.new(model)
-  (dispatch, Cell({ view, update, dispatcher, dispatch, model, flags }))
+  (
+    dispatch,
+    Cell({
+      inbox,
+      view,
+      update,
+      dispatch,
+      model,
+      flags,
+      subscriptions,
+      sub_map: {},
+    }),
+  )
 }
 
 ///|
@@ -283,20 +327,23 @@ pub fn[Model, Msg] simple_cell_with_dispatch(
   model~ : Model,
   update~ : (Msg, Model) -> Model,
   view~ : (Dispatch[Msg], Model) -> Html,
+  subscriptions? : (Dispatch[Msg], Model) -> @sub.Sub,
 ) -> (Dispatch[Msg], Cell) {
   let flags = @runtime.Flags::new()
-  let dispatcher = { id: flags.id(), inbox: @queue.new() }
-  let dispatch = m => dispatcher.message(m)
+  let inbox = @queue.Queue::new()
+  let dispatch = @cmd.make_dispatcher(flags.id, inbox)
   let model = @ref.new(model)
   (
     dispatch,
     Cell({
+      inbox,
       view,
       update: (_, msg, model) => (none, update(msg, model)),
-      dispatcher,
       dispatch,
       model,
       flags,
+      subscriptions,
+      sub_map: {},
     }),
   )
 }

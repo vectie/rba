@@ -2,15 +2,15 @@
 package "moonbit-community/rabbita/dialog"
 
 import {
-  "moonbit-community/rabbita/internal/runtime",
+  "moonbit-community/rabbita/cmd",
 }
 
 // Values
-pub fn close(String, return_value? : String) -> @runtime.Cmd
+pub fn close(String, return_value? : String) -> @cmd.Cmd
 
-pub fn request_close(String, return_value? : String) -> @runtime.Cmd
+pub fn request_close(String, return_value? : String) -> @cmd.Cmd
 
-pub fn show(String, modal? : Bool) -> @runtime.Cmd
+pub fn show(String, modal? : Bool) -> @cmd.Cmd
 
 // Errors
 

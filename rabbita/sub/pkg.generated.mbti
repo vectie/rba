@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita/sub"
+
+import {
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/internal/interface",
+}
+
+// Values
+pub fn batch(Array[Sub]) -> Sub
+
+pub fn every(Int, @cmd.Cmd) -> Sub
+
+pub let none : Sub
+
+pub fn on_resize(@cmd.Cmd) -> Sub
+
+// Errors
+
+// Types and methods
+type Sub
+pub impl @interface.Subscription for Sub
+
+// Type aliases
+
+// Traits
+

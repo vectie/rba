@@ -5,10 +5,6 @@ using @runtime {type Props}
 using @variant {type Variant}
 
 ///|
-#cfg(target="js")
-using @dom {type Event}
-
-///|
 #cfg(not(target="js"))
 type Event = Unit
 
@@ -60,16 +56,16 @@ pub fn Attrs::style(self : Attrs, key : String, value : String) -> Attrs {
   self
 }
 
-///|
-/// Set an event handler.
-pub fn Attrs::handler(
-  self : Attrs,
-  key : String,
-  value : (Event, &@runtime.Scheduler) -> Unit,
-) -> Attrs {
-  self.0.handlers[key] = value
-  self
-}
+// ///|
+// /// Set an event handler.
+// fn Attrs::handler(
+//   self : Attrs,
+//   key : String,
+//   value : (Event, &@interface.Scheduler) -> Unit,
+// ) -> Attrs {
+//   self.0.handlers[key] = value
+//   self
+// }
 
 ///|
 /// [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/style)

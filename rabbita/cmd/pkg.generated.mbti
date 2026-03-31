@@ -2,38 +2,51 @@
 package "moonbit-community/rabbita/cmd"
 
 import {
-  "moonbit-community/rabbita/internal/runtime",
+  "moonbit-community/rabbita/internal/interface",
+  "moonbit-community/rabbita/url",
 }
 
 // Values
-pub let after_render : @runtime.EffectKind
+pub let after_render : EffectKind
 
-pub fn[A, E : Error] attempt((Result[A, E]) -> @runtime.Cmd, async () -> A raise E) -> @runtime.Cmd
+pub fn[A, E : Error] attempt((Result[A, E]) -> Cmd, async () -> A raise E) -> Cmd
 
-pub fn batch(Array[@runtime.Cmd]) -> @runtime.Cmd
+pub fn batch(Array[Cmd]) -> Cmd
 
-pub fn delay(@runtime.Cmd, Int) -> @runtime.Cmd
+#alias(raw_effect, deprecated)
+pub fn custom_cmd((Scheduler) -> Unit, kind? : EffectKind) -> Cmd
 
-pub fn effect(async () -> Unit noraise) -> @runtime.Cmd
+pub fn delay(Cmd, Int) -> Cmd
 
-pub let immediately : @runtime.EffectKind
+pub fn effect(async () -> Unit noraise) -> Cmd
 
-pub let none : @runtime.Cmd
+pub let immediately : EffectKind
 
-pub fn[A] perform((A) -> @runtime.Cmd, async () -> A noraise) -> @runtime.Cmd
+pub let none : Cmd
 
-pub fn raw_effect((&@runtime.Scheduler) -> Unit, kind? : @runtime.EffectKind) -> @runtime.Cmd
+pub fn[A] perform((A) -> Cmd, async () -> A noraise) -> Cmd
 
 // Errors
 
 // Types and methods
+type Cmd
+pub fn Cmd::to_array(Self) -> Array[@interface.CustomCommand]
+
+pub(all) struct Dispatch[Msg]((Msg) -> Cmd)
+#deprecated
+pub fn[Msg] Dispatch::inner(Self[Msg]) -> (Msg) -> Cmd
+pub fn[A, B] Dispatch::map(Self[A], (B) -> A) -> Self[B]
+
+pub(all) enum EffectKind {
+  Immediately
+  AfterRender
+}
+
+type Scheduler
+pub fn Scheduler::add(Self, Cmd) -> Unit
+pub fn Scheduler::add_url_changed(Self, @url.Url) -> Unit
 
 // Type aliases
-pub using @runtime {type Cmd}
-
-pub using @runtime {type EffectKind}
-
-pub using @runtime {trait Scheduler}
 
 // Traits
 

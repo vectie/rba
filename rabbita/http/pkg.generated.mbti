@@ -2,17 +2,17 @@
 package "moonbit-community/rabbita/http"
 
 import {
-  "moonbit-community/rabbita/internal/runtime",
+  "moonbit-community/rabbita/cmd",
 }
 
 // Values
-pub fn[Model] delete(String, expect~ : Expecting[@runtime.Cmd, Model]) -> @runtime.Cmd
+pub fn[Model] delete(String, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
 
-pub fn[Model] get(String, expect~ : Expecting[@runtime.Cmd, Model]) -> @runtime.Cmd
+pub fn[Model] get(String, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
 
-pub fn[Model] patch(String, Body, expect~ : Expecting[@runtime.Cmd, Model]) -> @runtime.Cmd
+pub fn[Model] patch(String, Body, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
 
-pub fn[Model] post(String, Body, expect~ : Expecting[@runtime.Cmd, Model]) -> @runtime.Cmd
+pub fn[Model] post(String, Body, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
 
 // Errors
 

@@ -1,40 +1,28 @@
 ///|
 pub(open) trait IsCell {
-  step(Self, &Scheduler) -> Unit
+  step(Self, &@interface.Scheduler) -> Unit
   view(Self) -> VNode
   flags(Self) -> Flags
 }
 
 ///|
-struct Flags {
-  id : Id
+pub(all) struct Flags {
+  id : @interface.Id
   mut dirty : Bool
   mut attach_count : Int
 }
 
 ///|
+pub fn Flags::id(self : Self) -> Id {
+  self.id
+}
+
+///|
 pub fn Flags::new() -> Flags {
-  { id: Id::new(), dirty: false, attach_count: 0 }
+  { id: @interface.Id::new(), dirty: false, attach_count: 0 }
 }
 
 ///|
 pub fn Flags::mark_dirty(s : Self) -> Unit {
   s.dirty = true
 }
-
-///|
-pub fn Flags::id(s : Self) -> Id {
-  s.id
-}
-
-///|
-priv struct Link {
-  mut val : Instance?
-}
-
-///|
-fn Link::detach(s : Self) -> Unit {
-  s.val = None
-}
-
-///|

@@ -74,6 +74,20 @@ pub extern "js" fn Window::replace_url(self : Self, url : String) =
   #| (self,url) => { self.history.replaceState(null, '', url); }
 
 ///|
+/// https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval
+#cfg(target="js")
+pub extern "js" fn Window::set_interval(
+  self : Self,
+  f : () -> Unit,
+  ms : Int,
+) -> Int = "(self,f,ms) => self.setInterval(f, ms)"
+
+///|
+/// https://developer.mozilla.org/en-US/docs/Web/API/Window/clearInterval
+#cfg(target="js")
+pub extern "js" fn Window::clear_interval(self : Self, interval_id : Int) = "(self,id) => self.clearInterval(id)"
+
+///|
 /// https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame
 #cfg(target="js")
 pub extern "js" fn Window::request_animation_frame(
