@@ -5,7 +5,7 @@ import {
   "moonbit-community/rabbita/dom",
   "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/sub",
-  "moonbit-community/rabbita/internal/interface",
+  "moonbit-community/rabbita/internal/key",
   "moonbitlang/core/queue",
   "moonbitlang/core/ref",
   "moonbit-community/rabbita/js",

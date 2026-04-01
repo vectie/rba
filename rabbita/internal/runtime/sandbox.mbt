@@ -2,12 +2,6 @@
 using @queue {type Queue}
 
 ///|
-using @interface {trait Scheduler, type CustomCommand, type Id, type InstId}
-
-///|
-using @url {type Url, type UrlRequest}
-
-///|
 /// The rendering pipeline will do the following step:
 ///
 /// 1. view(model) -> newView  
@@ -29,8 +23,7 @@ pub(all) struct Sandbox {
   priv root : Instance
   priv captured_link_listener : @dom.Listener
   mut mount : String
-  mut on_url_changed : ((Url) -> Array[CustomCommand])?
-  mut on_url_request : ((UrlRequest) -> Array[CustomCommand])?
+  hooks : @cmd.Hooks
 }
 
 ///|
@@ -41,7 +34,7 @@ pub fn Sandbox::new(root : &IsCell) -> Sandbox {
   let captured_link_listener = fn(event : @dom.Event) {
     if event.to_mouse_event() is Some(mouse_event) &&
       sandbox is Some(sandbox) &&
-      sandbox.on_url_request is Some(_) &&
+      sandbox.hooks.url_request is Some(hook) &&
       !(mouse_event.get_meta_key() || mouse_event.get_ctrl_key()) {
       event.prevent_default()
       let href = event
@@ -51,16 +44,8 @@ pub fn Sandbox::new(root : &IsCell) -> Sandbox {
         .unwrap()
         .get_property("href")
         .unwrap()
-      let curr = try! @url.parse(@dom.window().current_url())
-      let next = try! @url.parse(href)
-      let request = if curr.protocol == next.protocol &&
-        curr.host == next.host &&
-        curr.port == next.port {
-        @url.Internal(next)
-      } else {
-        External(href)
-      }
-      sandbox.add_url_request(request)
+
+      hook(sandbox, href)
     }
   }
   let live_map = Map::from_array([
@@ -71,8 +56,7 @@ pub fn Sandbox::new(root : &IsCell) -> Sandbox {
     live_map,
     msg_queue: Queue::new(),
     dirty_set: Set::new(),
-    on_url_changed: None,
-    on_url_request: None,
+    hooks: { url_request: None, url_changed: None },
     paint_scheduled: false,
     drain_scheduled: false,
     mount: "",
@@ -83,29 +67,18 @@ pub fn Sandbox::new(root : &IsCell) -> Sandbox {
 }
 
 ///|
-/// Processing all pending messages FIFO to update all relevant models
-#cfg(target="js")
-fn Sandbox::drain(self : Self) -> Unit {
-  if !self.drain_scheduled {
-    self.drain_scheduled = true
-    while self.msg_queue.pop() is Some(id) {
-      if self.live_map.get(id) is Some((cell, _)) {
-        cell.step(self)
-        self.dirty_set.add(id)
-      }
-    }
-    self.drain_scheduled = false
-    self.flush()
-  }
-}
-
-///|
 #cfg(target="js")
 pub fn Sandbox::initialize(self : Self) -> Unit {
   let root = self.root
   let element = @dom.document().get_element_by_id(self.mount).unwrap() // TODO: handle error
   self.dirty_set.add(root.cell.flags().id)
+
   root.cell.init(self)
+  // trigger a url_changed message 
+  if self.hooks().url_changed is Some(hook) {
+    hook(self, @dom.window().current_url())
+  }
+
   let vnode = root.cell.view()
   let inode = vnode.insert(self, root, element.as_node(), null())
   self.root.inode = Some(inode)
@@ -140,15 +113,6 @@ fn Sandbox::drop_live_subtree(self : Self, root : Instance) -> Unit {
         stack.push(c)
       }
     }
-  }
-}
-
-///|
-#cfg(target="js")
-fn Sandbox::add_url_request(self : Self, request : UrlRequest) -> Unit {
-  match self.on_url_request {
-    None => ()
-    Some(f) => self.add_cmds(f(request))
   }
 }
 
@@ -200,25 +164,40 @@ pub fn Sandbox::flush(self : Self) -> Unit {
 }
 
 ///|
-/// Run an effect immediately or pending a message.
 #cfg(target="js")
-pub impl Scheduler for Sandbox with add_cmd(self, cmd : CustomCommand) {
-  match cmd {
-    Immediately(f) => f(self)
-    AfterRender(f) => self.after_render_queue.push(f)
-    Message(id, send_message) => {
-      send_message()
-      self.msg_queue.push(id)
-    }
+pub impl Scheduler for Sandbox with run_effect(self, kind, f) {
+  match kind {
+    Immediately => f(self)
+    AfterRender => self.after_render_queue.push(f)
   }
-  self.drain()
 }
 
 ///|
 #cfg(target="js")
-pub impl Scheduler for Sandbox with add_url_changed(self, url) {
-  match self.on_url_changed {
-    None => ()
-    Some(f) => self.add_cmds(f(url))
+pub impl Scheduler for Sandbox with queue_message(self, id, send_message) {
+  send_message()
+  self.msg_queue.push(id)
+}
+
+///|
+/// Processing all pending messages FIFO to update all relevant models
+#cfg(target="js")
+pub impl Scheduler for Sandbox with drain_message(self) {
+  if !self.drain_scheduled {
+    self.drain_scheduled = true
+    while self.msg_queue.pop() is Some(id) {
+      if self.live_map.get(id) is Some((cell, _)) {
+        cell.step(self)
+        self.dirty_set.add(id)
+      }
+    }
+    self.drain_scheduled = false
+    self.flush()
   }
+}
+
+///|
+#cfg(target="js")
+pub impl Scheduler for Sandbox with hooks(self) {
+  self.hooks
 }

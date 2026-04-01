@@ -10,6 +10,10 @@ import {
 // Errors
 
 // Types and methods
+type Id derive(Compare, Eq, Hash, Show)
+
+type InstId derive(Eq, Hash)
+
 type Keyboard derive(@debug.Debug)
 pub fn Keyboard::alt_key(Self) -> Bool
 pub fn Keyboard::code(Self) -> String

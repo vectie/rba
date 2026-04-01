@@ -1,5 +1,5 @@
 ///|
-let global_id_count : Ref[Int] = @ref.new(0)
+let global_id_count : Ref[Int] = Ref(0)
 
 ///|
 struct Id(Int) derive(Eq, Hash, Compare, Show)
@@ -12,7 +12,8 @@ fn next_id() -> Int {
 }
 
 ///|
-pub fn Id::new() -> Id {
+#doc(hidden)
+pub fn Id::new(_ : @key.Key) -> Id {
   next_id()
 }
 
@@ -20,6 +21,7 @@ pub fn Id::new() -> Id {
 struct InstId(Int) derive(Eq, Hash)
 
 ///|
-pub fn InstId::new() -> InstId {
+#doc(hidden)
+pub fn InstId::new(_ : @key.Key) -> InstId {
   next_id()
 }

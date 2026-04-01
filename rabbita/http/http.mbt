@@ -1,5 +1,5 @@
 ///|
-using @cmd {type Cmd}
+using @cmd {type Cmd, trait Scheduler}
 
 ///|
 #cfg(target="js")
@@ -66,7 +66,7 @@ fn[Model] request(
   expect~ : Expecting[Cmd, Model],
   body~ : Body,
 ) -> Cmd {
-  let launch = fn(scheduler : @cmd.Scheduler) {
+  let launch = fn(scheduler : &Scheduler) {
     let has_body = match body {
       Empty => false
       _ => true

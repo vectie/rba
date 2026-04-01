@@ -1,14 +1,15 @@
 ///|
 pub(open) trait IsCell {
-  init(Self, &@interface.Scheduler) -> Unit
-  step(Self, &@interface.Scheduler) -> Unit
+  init(Self, &Scheduler) -> Unit
+  step(Self, &Scheduler) -> Unit
   view(Self) -> VNode
   flags(Self) -> Flags
 }
 
 ///|
 pub(all) struct Flags {
-  id : @interface.Id
+  id : Id
+  mut is_root : Bool
   mut dirty : Bool
   mut attach_count : Int
 }
@@ -20,7 +21,7 @@ pub fn Flags::id(self : Self) -> Id {
 
 ///|
 pub fn Flags::new() -> Flags {
-  { id: @interface.Id::new(), dirty: false, attach_count: 0 }
+  { id: Id::new(@key.key), dirty: false, attach_count: 0, is_root: false }
 }
 
 ///|

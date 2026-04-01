@@ -1,17 +1,4 @@
 ///|
-struct Scheduler(&@interface.Scheduler)
-
-///|
-pub fn Scheduler::add(self : Self, cmd : Cmd) -> Unit {
-  self.0.add_cmds(cmd.to_array())
-}
-
-///|
-pub fn Scheduler::add_url_changed(self : Self, url : @url.Url) -> Unit {
-  self.0.add_url_changed(url)
-}
-
-///|
 pub(all) enum EffectKind {
   Immediately
   AfterRender
@@ -23,12 +10,14 @@ pub(all) enum EffectKind {
 /// `Cmd` models side effects in the update loop. Commands are returned from
 /// `update` or embedded in `Html` event handlers, and are executed later by
 /// the runtime.
-struct Cmd(Array[@interface.CustomCommand])
+enum Cmd {
+  Batch(Array[Cmd])
+  Effect(EffectKind, OnExecute)
+  Message(@common.Id, () -> Unit)
+}
 
 ///|
-pub fn Cmd::to_array(self : Cmd) -> Array[@interface.CustomCommand] {
-  self.0
-}
+type OnExecute = (&Scheduler) -> Unit
 
 ///|
 pub let immediately : EffectKind = Immediately
@@ -38,13 +27,13 @@ pub let after_render : EffectKind = AfterRender
 
 ///|
 /// A command that does nothing.
-pub let none : Cmd = []
+pub let none : Cmd = Batch([])
 
 ///|
 /// Combine multiple commands into one command.
 #inline
 pub fn batch(cmds : Array[Cmd]) -> Cmd {
-  cmds.iter().flat_map(x => x.0.iter()).collect()
+  Batch(cmds)
 }
 
 ///|
@@ -76,13 +65,10 @@ pub fn batch(cmds : Array[Cmd]) -> Cmd {
 #inline
 #alias(raw_effect, deprecated)
 pub fn custom_cmd(
-  callback : (Scheduler) -> Unit,
+  callback : (&Scheduler) -> Unit,
   kind? : EffectKind = EffectKind::Immediately,
 ) -> Cmd {
-  match kind {
-    Immediately => [@interface.Immediately(scheduler => callback(scheduler))]
-    AfterRender => [@interface.AfterRender(scheduler => callback(scheduler))]
-  }
+  Effect(kind, callback)
 }
 
 ///|

@@ -2,9 +2,9 @@
 package "moonbit-community/rabbita/internal/runtime"
 
 import {
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/common",
   "moonbit-community/rabbita/dom",
-  "moonbit-community/rabbita/internal/interface",
-  "moonbit-community/rabbita/url",
   "moonbit-community/rabbita/variant",
 }
 
@@ -20,34 +20,34 @@ pub(all) enum Children[T] {
 }
 
 pub(all) struct Flags {
-  id : @interface.Id
+  id : @common.Id
+  mut is_root : Bool
   mut dirty : Bool
   mut attach_count : Int
 }
-pub fn Flags::id(Self) -> @interface.Id
+pub fn Flags::id(Self) -> @common.Id
 pub fn Flags::mark_dirty(Self) -> Unit
 pub fn Flags::new() -> Self
 
 pub struct Props {
-  handlers : Map[String, (@dom.Event, &@interface.Scheduler) -> Unit]
+  handlers : Map[String, (@dom.Event, &@cmd.Scheduler) -> Unit]
   attrs : Map[String, String]
   props : Map[String, @variant.Variant]
   styles : Map[String, String]
   // private fields
 }
 pub fn Props::copy(Self) -> Self
-pub fn Props::new(Map[String, String], Map[String, @variant.Variant], Map[String, String], Map[String, (@dom.Event, &@interface.Scheduler) -> Unit]) -> Self
+pub fn Props::new(Map[String, String], Map[String, @variant.Variant], Map[String, String], Map[String, (@dom.Event, &@cmd.Scheduler) -> Unit]) -> Self
 
 pub(all) struct Sandbox {
   mut mount : String
-  mut on_url_changed : ((@url.Url) -> Array[@interface.CustomCommand])?
-  mut on_url_request : ((@url.UrlRequest) -> Array[@interface.CustomCommand])?
+  hooks : @cmd.Hooks
   // private fields
 }
 pub fn Sandbox::flush(Self) -> Unit
 pub fn Sandbox::initialize(Self) -> Unit
 pub fn Sandbox::new(&IsCell) -> Self
-pub impl @interface.Scheduler for Sandbox
+pub impl @cmd.Scheduler for Sandbox
 
 pub enum VNode {
   Elem(String, Props, Children[VNode], namespace_uri~ : String?)
@@ -65,8 +65,8 @@ pub fn VNode::text(String) -> Self
 
 // Traits
 pub(open) trait IsCell {
-  init(Self, &@interface.Scheduler) -> Unit
-  step(Self, &@interface.Scheduler) -> Unit
+  init(Self, &@cmd.Scheduler) -> Unit
+  step(Self, &@cmd.Scheduler) -> Unit
   view(Self) -> VNode
   flags(Self) -> Flags
 }

@@ -2,8 +2,7 @@
 package "moonbit-community/rabbita/cmd"
 
 import {
-  "moonbit-community/rabbita/internal/interface",
-  "moonbit-community/rabbita/url",
+  "moonbit-community/rabbita/common",
 }
 
 // Values
@@ -14,7 +13,7 @@ pub fn[A, E : Error] attempt((Result[A, E]) -> Cmd, async () -> A raise E) -> Cm
 pub fn batch(Array[Cmd]) -> Cmd
 
 #alias(raw_effect, deprecated)
-pub fn custom_cmd((Scheduler) -> Unit, kind? : EffectKind) -> Cmd
+pub fn custom_cmd((&Scheduler) -> Unit, kind? : EffectKind) -> Cmd
 
 pub fn delay(Cmd, Int) -> Cmd
 
@@ -30,7 +29,6 @@ pub fn[A] perform((A) -> Cmd, async () -> A noraise) -> Cmd
 
 // Types and methods
 type Cmd
-pub fn Cmd::to_array(Self) -> Array[@interface.CustomCommand]
 
 pub(all) struct Dispatch[Msg]((Msg) -> Cmd)
 #deprecated
@@ -42,11 +40,22 @@ pub(all) enum EffectKind {
   AfterRender
 }
 
-type Scheduler
-pub fn Scheduler::add(Self, Cmd) -> Unit
-pub fn Scheduler::add_url_changed(Self, @url.Url) -> Unit
+pub(all) struct Hooks {
+  mut url_request : ((&Scheduler, String) -> Unit)?
+  mut url_changed : ((&Scheduler, String) -> Unit)?
+}
 
 // Type aliases
+pub type Hook[Arg] = (&Scheduler, Arg) -> Unit
+
+pub type MessageSender = () -> Unit
 
 // Traits
+pub(open) trait Scheduler {
+  run_effect(Self, EffectKind, (&Scheduler) -> Unit) -> Unit
+  queue_message(Self, @common.Id, () -> Unit) -> Unit
+  drain_message(Self) -> Unit
+  add(Self, Cmd) -> Unit = _
+  hooks(Self) -> Hooks
+}
 

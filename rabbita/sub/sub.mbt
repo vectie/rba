@@ -1,45 +1,71 @@
 ///|
-using @interface {trait Scheduler}
-
-///|
 using @common {type Keyboard, type Mouse, type Scroll, type Viewport}
 
 ///|
-using @cmd {type Cmd}
+using @cmd {type Cmd, trait Scheduler}
 
 ///|
 /// A long-lived subscription managed by the Rabbita runtime.
 ///
 /// Use subscriptions to listen to external signals such as timers, window
 /// resize, scrolling, keyboard input, or visibility changes.
-struct Sub(Map[String, @interface.CustomSubscription])
-
-///|
-fn custom_subscription(key : String, load : (&Scheduler) -> () -> Unit) -> Sub {
-  Map::from_array([(key, load)])
+enum Sub {
+  Custom(String, Scope, Initializer)
+  Batch(Array[Sub])
 }
 
 ///|
-pub impl @interface.Subscription for Sub with to_map(self) {
-  self.0
+priv enum Scope {
+  Local
+  Global
 }
 
 ///|
-fn add_cmd(scheduler : &Scheduler, cmd : Cmd) -> Unit {
-  scheduler.add_cmds(cmd.to_array())
+pub type Initializer = (&Scheduler) -> Disposer
+
+///|
+pub type Disposer = (&Scheduler) -> Unit
+
+///|
+#doc(hidden)
+pub fn Sub::to_map(
+  self : Self,
+  _ : @key.Key,
+  filter_global~ : Bool,
+) -> Map[String, Initializer] {
+  let map = {}
+  fn go(s) {
+    match s {
+      Custom(_, Global, _) if filter_global => ()
+      Custom(k, _, v) => map[k] = v
+      Batch(xs) => xs.each(go)
+    }
+  }
+  go(self)
+  map
+}
+
+///|
+fn custom_subscription(
+  key : String,
+  scope : Scope,
+  load : (&Scheduler) -> (&Scheduler) -> Unit,
+) -> Sub {
+  Custom(key, scope, load)
 }
 
 ///|
 fn event_subscription(
   key : String,
+  scope : Scope,
   target : @dom.EventTarget,
   event_name : String,
   handler : (@dom.Event) -> Cmd,
 ) -> Sub {
-  custom_subscription(key, scheduler => {
-    let listener : @dom.Listener = event => add_cmd(scheduler, handler(event))
+  custom_subscription(key, scope, scheduler => {
+    let listener : @dom.Listener = event => scheduler.add(handler(event))
     target.add_event_listener(event_name, listener)
-    fn() { target.remove_event_listener(event_name, listener) }
+    _ => target.remove_event_listener(event_name, listener)
   })
 }
 
@@ -80,9 +106,9 @@ fn window_scroll() -> Scroll {
 ///|
 /// Repeatedly enqueue `cmd` every `ms` milliseconds.
 pub fn every(ms : Int, cmd : @cmd.Cmd) -> Sub {
-  custom_subscription("every(\{ms})", scheduler => {
-    let id : Int = @dom.window().set_interval(() => add_cmd(scheduler, cmd), ms)
-    fn() { @dom.window().clear_interval(id) }
+  custom_subscription("every(\{ms})", Local, scheduler => {
+    let id : Int = @dom.window().set_interval(() => scheduler.add(cmd), ms)
+    fn(_) { @dom.window().clear_interval(id) }
   })
 }
 
@@ -91,13 +117,19 @@ pub fn every(ms : Int, cmd : @cmd.Cmd) -> Sub {
 ///
 /// The handler receives the latest viewport width and height.
 pub fn on_resize(msg : @cmd.Dispatch[Viewport]) -> Sub {
-  event_subscription("on_resize", @dom.window().as_event_target(), "resize", event => {
-    ignore(event)
-    msg({
-      width: @dom.window().inner_width(),
-      height: @dom.window().inner_height(),
-    })
-  })
+  event_subscription(
+    "on_resize",
+    Local,
+    @dom.window().as_event_target(),
+    "resize",
+    event => {
+      ignore(event)
+      msg({
+        width: @dom.window().inner_width(),
+        height: @dom.window().inner_height(),
+      })
+    },
+  )
 }
 
 ///|
@@ -106,7 +138,7 @@ pub fn on_resize(msg : @cmd.Dispatch[Viewport]) -> Sub {
 /// The handler receives the browser timestamp for each frame while the
 /// subscription is active.
 pub fn on_animation_frame(msg : @cmd.Dispatch[Double]) -> Sub {
-  custom_subscription("on_animation_frame", scheduler => {
+  custom_subscription("on_animation_frame", Local, scheduler => {
     let mut active = true
     let mut request_id : Double? = None
 
@@ -114,14 +146,14 @@ pub fn on_animation_frame(msg : @cmd.Dispatch[Double]) -> Sub {
       request_id = Some(
         @dom.window().request_animation_frame(timestamp => {
           guard active else { return }
-          add_cmd(scheduler, msg(timestamp))
+          scheduler.add(msg(timestamp))
           queue_next()
         }),
       )
     }
 
     queue_next()
-    fn() {
+    fn(_) {
       active = false
       guard request_id is Some(id) else { return }
       @dom.window().cancel_animation_frame(id)
@@ -136,6 +168,7 @@ pub fn on_animation_frame(msg : @cmd.Dispatch[Double]) -> Sub {
 pub fn on_key_down(msg : @cmd.Dispatch[Keyboard]) -> Sub {
   event_subscription(
     "on_key_down",
+    Local,
     @dom.document().as_event_target(),
     "keydown",
     event => msg(keyboard_from_dom(event.to_keyboard_event().unwrap())),
@@ -147,9 +180,13 @@ pub fn on_key_down(msg : @cmd.Dispatch[Keyboard]) -> Sub {
 ///
 /// The handler receives a normalized `Keyboard` value from `@common`.
 pub fn on_key_up(msg : @cmd.Dispatch[Keyboard]) -> Sub {
-  event_subscription("on_key_up", @dom.document().as_event_target(), "keyup", event => {
-    msg(keyboard_from_dom(event.to_keyboard_event().unwrap()))
-  })
+  event_subscription(
+    "on_key_up",
+    Local,
+    @dom.document().as_event_target(),
+    "keyup",
+    event => msg(keyboard_from_dom(event.to_keyboard_event().unwrap())),
+  )
 }
 
 ///|
@@ -160,6 +197,7 @@ pub fn on_key_up(msg : @cmd.Dispatch[Keyboard]) -> Sub {
 pub fn on_visibility_change(msg : @cmd.Dispatch[Bool]) -> Sub {
   event_subscription(
     "on_visibility_change",
+    Local,
     @dom.document().as_event_target(),
     "visibilitychange",
     _ => msg(@dom.document().hidden()),
@@ -173,6 +211,7 @@ pub fn on_visibility_change(msg : @cmd.Dispatch[Bool]) -> Sub {
 pub fn on_mouse_move(msg : @cmd.Dispatch[Mouse]) -> Sub {
   event_subscription(
     "on_mouse_move",
+    Local,
     @dom.document().as_event_target(),
     "mousemove",
     event => msg(mouse_from_dom(event.to_mouse_event().unwrap())),
@@ -186,26 +225,83 @@ pub fn on_mouse_move(msg : @cmd.Dispatch[Mouse]) -> Sub {
 /// element. The handler receives the current scroll offset and document scroll
 /// size as a `Scroll` value.
 pub fn on_scroll(msg : @cmd.Dispatch[Scroll]) -> Sub {
-  event_subscription("on_scroll", @dom.window().as_event_target(), "scroll", event => {
-    ignore(event)
-    msg(window_scroll())
+  event_subscription(
+    "on_scroll",
+    Local,
+    @dom.window().as_event_target(),
+    "scroll",
+    event => {
+      ignore(event)
+      msg(window_scroll())
+    },
+  )
+}
+
+///|
+/// Subscribe to browser location changes.
+///
+/// This is an app-scoped subscription. It is only active when returned from
+/// the root cell's `subscriptions` callback; if a non-root cell returns it,
+/// the subscription is ignored.
+pub fn on_url_changed(msg : @cmd.Dispatch[@url.Url]) -> Sub {
+  custom_subscription("on_url_changed", Global, scheduler => {
+    scheduler.hooks().url_changed = Some((scheduler, url) => {
+      try @url.parse(url) catch {
+        e => println("failed to parse \{url}: \{e}")
+      } noraise {
+        url => scheduler.add(msg(url))
+      }
+    })
+
+    let listener = fn(_) {
+      if scheduler.hooks().url_changed is Some(hook) {
+        hook(scheduler, @dom.window().current_url())
+      }
+    }
+    @dom.window().to_event_target().add_event_listener("popstate", listener)
+
+    fn(_) {
+      scheduler.hooks().url_changed = None
+      @dom.window()
+      .to_event_target()
+      .remove_event_listener("popstate", listener)
+    }
+  })
+}
+
+///|
+/// Subscribe to captured navigation requests from `@html.a(...)`.
+///
+/// This is an app-scoped subscription. It is only active when returned from
+/// the root cell's `subscriptions` callback; if a non-root cell returns it,
+/// the subscription is ignored.
+pub fn on_url_request(msg : @cmd.Dispatch[@url.UrlRequest]) -> Sub {
+  custom_subscription("on_url_request", Global, scheduler => {
+    scheduler.hooks().url_request = Some((scheduler, href) => {
+      let curr = try! @url.parse(@dom.window().current_url())
+      let next = try! @url.parse(href)
+      let request = if curr.protocol == next.protocol &&
+        curr.host == next.host &&
+        curr.port == next.port {
+        @url.Internal(next)
+      } else {
+        External(href)
+      }
+      scheduler.add(msg(request))
+    })
+
+    fn(_) { scheduler.hooks().url_request = None }
   })
 }
 
 ///|
 /// A subscription that does nothing.
-pub let none : Sub = {}
+pub let none : Sub = Batch([])
 
 ///|
 /// Combine multiple subscriptions into one.
 ///
 /// If multiple subscriptions use the same internal key, the later one wins.
 pub fn batch(xs : Array[Sub]) -> Sub {
-  let r = {}
-  for x in xs {
-    for k, v in x.0 {
-      r[k] = v
-    }
-  }
-  r
+  Batch(xs)
 }

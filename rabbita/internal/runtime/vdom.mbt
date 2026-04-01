@@ -1,4 +1,10 @@
 ///|
+using @cmd {trait Scheduler}
+
+///|
+using @common {type InstId, type Id}
+
+///|
 pub enum VNode {
   Elem(String, Props, Children[VNode], namespace_uri~ : String?)
   Text(String)
@@ -37,7 +43,7 @@ fn Instance::new(cell : &IsCell) -> Self {
     link: { val: None },
     old_childs: {},
     new_childs: {},
-    id: InstId::new(),
+    id: InstId::new(@key.key),
   }
 }
 

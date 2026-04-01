@@ -41,7 +41,8 @@ pub fn static_cell(@html.Html) -> Cell
 type App
 pub fn App::mount(Self, String) -> Unit
 pub fn App::with_init(Self, @cmd.Cmd) -> Unit
-pub fn App::with_route(Self, url_changed? : (@url.Url) -> @cmd.Cmd, url_request? : (@url.UrlRequest) -> @cmd.Cmd) -> Unit
+#deprecated
+pub fn App::with_route(Self, url_changed? : @cmd.Dispatch[@url.Url], url_request? : @cmd.Dispatch[@url.UrlRequest]) -> Unit
 
 type Cell
 pub fn Cell::view(Self) -> @html.Html

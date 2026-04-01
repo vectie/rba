@@ -7,12 +7,9 @@ priv struct TypedCell[Model, Msg] {
   update : (Dispatch[Msg], Msg, Model) -> (Cmd, Model)
   view : (Dispatch[Msg], Model) -> @html.Html
   subscriptions : ((Dispatch[Msg], Model) -> @sub.Sub)?
-  mut sub_map : SubscriptionMap
+  mut sub_map : Map[String, @sub.Disposer]
   flags : @runtime.Flags
 }
-
-///|
-type SubscriptionMap = Map[String, () -> Unit]
 
 ///|
 /// Message dispatcher type used by a `Cell`.
@@ -29,7 +26,10 @@ impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with init(
   guard !self.has_init else { return }
   self.has_init = true
   if self.subscriptions is Some(subscriptions) {
-    let subs = subscriptions(self.dispatch, self.model.val).to_map()
+    let subs = subscriptions(self.dispatch, self.model.val).to_map(
+      @key.key,
+      filter_global=!self.flags().is_root,
+    )
     for key, sub in subs {
       self.sub_map[key] = sub(scheduler)
     }
@@ -38,14 +38,14 @@ impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with init(
 
 ///|
 fn diff_subs(
-  old_subs : SubscriptionMap,
-  new_subs : Map[String, @interface.CustomSubscription],
-  scheduler : &@interface.Scheduler,
-) -> SubscriptionMap {
+  old_subs : Map[String, @sub.Disposer],
+  new_subs : Map[String, @sub.Initializer],
+  scheduler : &@cmd.Scheduler,
+) -> Map[String, @sub.Disposer] {
   let sub_map = {}
   for key, dispose in old_subs {
     if !new_subs.contains(key) {
-      dispose()
+      dispose(scheduler)
     } else {
       sub_map[key] = dispose
     }
@@ -66,12 +66,15 @@ impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with step(
   if self.inbox.pop() is Some(msg) {
     let (cmd, model) = (self.update)(self.dispatch, msg, self.model.val)
     if self.subscriptions is Some(subscriptions) {
-      let new_subs = subscriptions(self.dispatch, model).to_map()
+      let new_subs = subscriptions(self.dispatch, model).to_map(
+        @key.key,
+        filter_global=!self.flags().is_root,
+      )
       let old_subs = self.sub_map
       self.sub_map = diff_subs(old_subs, new_subs, scheduler)
     }
     self.model.val = model
-    scheduler.add_cmds(cmd.to_array())
+    scheduler.add(cmd)
     self.flags.mark_dirty()
   } else {
     // violate the invariant
@@ -161,7 +164,7 @@ pub fn[Model, Msg] cell(
 ) -> Cell {
   let flags = @runtime.Flags::new()
   let inbox = @queue.Queue::new()
-  let dispatch = @cmd.make_dispatcher(flags.id, inbox)
+  let dispatch = @cmd.make_dispatcher(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   Cell({
     has_init: false,
@@ -241,7 +244,7 @@ pub fn[Model, Msg] cell_with_dispatch(
 ) -> (Dispatch[Msg], Cell) {
   let flags = @runtime.Flags::new()
   let inbox = @queue.Queue::new()
-  let dispatch = @cmd.make_dispatcher(flags.id, inbox)
+  let dispatch = @cmd.make_dispatcher(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   (
     dispatch,
@@ -348,7 +351,7 @@ pub fn[Model, Msg] simple_cell_with_dispatch(
 ) -> (Dispatch[Msg], Cell) {
   let flags = @runtime.Flags::new()
   let inbox = @queue.Queue::new()
-  let dispatch = @cmd.make_dispatcher(flags.id, inbox)
+  let dispatch = @cmd.make_dispatcher(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   (
     dispatch,

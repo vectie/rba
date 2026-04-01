@@ -4,7 +4,7 @@ package "moonbit-community/rabbita/sub"
 import {
   "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/common",
-  "moonbit-community/rabbita/internal/interface",
+  "moonbit-community/rabbita/url",
 }
 
 // Values
@@ -26,15 +26,21 @@ pub fn on_resize(@cmd.Dispatch[@common.Viewport]) -> Sub
 
 pub fn on_scroll(@cmd.Dispatch[@common.Scroll]) -> Sub
 
+pub fn on_url_changed(@cmd.Dispatch[@url.Url]) -> Sub
+
+pub fn on_url_request(@cmd.Dispatch[@url.UrlRequest]) -> Sub
+
 pub fn on_visibility_change(@cmd.Dispatch[Bool]) -> Sub
 
 // Errors
 
 // Types and methods
 type Sub
-pub impl @interface.Subscription for Sub
 
 // Type aliases
+pub type Disposer = (&@cmd.Scheduler) -> Unit
+
+pub type Initializer = (&@cmd.Scheduler) -> (&@cmd.Scheduler) -> Unit
 
 // Traits
 

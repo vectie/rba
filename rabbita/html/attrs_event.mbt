@@ -86,7 +86,7 @@ fn Attrs::on_mouse_event(
   msg : (MouseEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_mouse_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_mouse_event().unwrap()))
   })
 }
 
@@ -109,7 +109,7 @@ fn Attrs::on_keyboard_event(
   msg : (KeyboardEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_keyboard_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_keyboard_event().unwrap()))
   })
 }
 
@@ -132,7 +132,7 @@ fn Attrs::on_focus_event(
   msg : (FocusEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_focus_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_focus_event().unwrap()))
   })
 }
 
@@ -155,7 +155,7 @@ fn Attrs::on_drag_event(
   msg : (DragEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_drag_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_drag_event().unwrap()))
   })
 }
 
@@ -178,7 +178,7 @@ fn Attrs::on_clipboard_event(
   msg : (ClipboardEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_clipboard_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_clipboard_event().unwrap()))
   })
 }
 
@@ -201,7 +201,7 @@ fn Attrs::on_composition_event(
   msg : (CompositionEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_composition_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_composition_event().unwrap()))
   })
 }
 
@@ -224,7 +224,7 @@ fn Attrs::on_wheel_event(
   msg : (WheelEvent) -> Cmd,
 ) -> Attrs {
   self.handler(event, (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_wheel_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_wheel_event().unwrap()))
   })
 }
 
@@ -298,7 +298,7 @@ pub fn Attrs::on_contextmenu(self : Attrs, msg : (MouseEvent) -> Cmd) -> Attrs {
 #cfg(target="js")
 pub fn Attrs::on_scroll(self : Attrs, msg : (UIEvent) -> Cmd) -> Attrs {
   self.handler("scroll", (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_ui_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_ui_event().unwrap()))
   })
 }
 
@@ -318,7 +318,7 @@ pub fn Attrs::on_wheel(self : Attrs, msg : (WheelEvent) -> Cmd) -> Attrs {
 #cfg(target="js")
 pub fn Attrs::on_input(self : Attrs, msg : (InputEvent) -> Cmd) -> Attrs {
   self.handler("input", (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_input_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_input_event().unwrap()))
   })
 }
 
@@ -333,7 +333,7 @@ pub fn Attrs::on_input(self : Attrs, msg : (InputEvent) -> Cmd) -> Attrs {
 #cfg(target="js")
 pub fn Attrs::on_change(self : Attrs, msg : (InputEvent) -> Cmd) -> Attrs {
   self.handler("change", (event, scheduler) => {
-    scheduler.add_cmds(msg(event.to_input_event().unwrap()).to_array())
+    scheduler.add(msg(event.to_input_event().unwrap()))
   })
 }
 
@@ -366,16 +366,12 @@ pub fn Attrs::on_keyup(self : Attrs, msg : (KeyboardEvent) -> Cmd) -> Attrs {
 
 ///|
 pub fn Attrs::on_submit(self : Attrs, msg : (DomEvent) -> Cmd) -> Attrs {
-  self.handler("submit", (event, scheduler) => {
-    scheduler.add_cmds(msg(event).to_array())
-  })
+  self.handler("submit", (event, scheduler) => scheduler.add(msg(event)))
 }
 
 ///|
 pub fn Attrs::on_reset(self : Attrs, msg : (DomEvent) -> Cmd) -> Attrs {
-  self.handler("reset", (event, scheduler) => {
-    scheduler.add_cmds(msg(event).to_array())
-  })
+  self.handler("reset", (event, scheduler) => scheduler.add(msg(event)))
 }
 
 ///|

@@ -117,7 +117,7 @@ fn push_submit(value : Cmd?, attrs : Attrs) -> Unit {
     ignore(
       attrs.handler("submit", (event, scheduler) => {
         event.prevent_default()
-        scheduler.add_cmds(v.to_array())
+        scheduler.add(v)
       }),
     )
   }
@@ -373,7 +373,7 @@ fn push_change(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(
       attrs.handler("change", (event, scheduler) => {
-        scheduler.add_cmds(v(form_event_value(event)).to_array())
+        scheduler.add(v(form_event_value(event)))
       }),
     )
   }
@@ -391,7 +391,7 @@ fn push_input(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(
       attrs.handler("input", (event, scheduler) => {
-        scheduler.add_cmds(v(form_event_value(event)).to_array())
+        scheduler.add(v(form_event_value(event)))
       }),
     )
   }
@@ -458,7 +458,7 @@ fn push_close(value : @cmd.Dispatch[String]?, attrs : Attrs) -> Unit {
     ignore(
       attrs.handler("close", (event, scheduler) => {
         let html_element = event.target().to_html_dialog_element().unwrap()
-        scheduler.add_cmds(close(html_element.return_value()).to_array())
+        scheduler.add(close(html_element.return_value()))
       }),
     )
   }
@@ -477,7 +477,7 @@ fn push_cancel(value : Cmd?, attrs : Attrs) -> Unit {
     ignore(
       attrs.handler("cancel", (event, scheduler) => {
         event.prevent_default()
-        scheduler.add_cmds(cancel.to_array())
+        scheduler.add(cancel)
       }),
     )
   }

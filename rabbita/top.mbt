@@ -32,6 +32,7 @@ pub type Html = @html.Html
 #cfg(target="js")
 pub fn new(root : Cell) -> App {
   let sandbox = @runtime.Sandbox::new(root.0)
+  root.0.flags().is_root = true
   App::{ sandbox, init_cmd: None }
 }
 
@@ -45,24 +46,21 @@ pub fn new(root : Cell) -> App {
 /// If the app is already mounted, a `url_changed` command for the current URL
 /// will be enqueued immediately.
 #cfg(target="js")
+#deprecated("use subscriptions and @sub.on_url_changed/@sub.on_url_request instead")
 pub fn App::with_route(
   self : Self,
-  url_changed? : (@url.Url) -> Cmd,
-  url_request? : (@url.UrlRequest) -> Cmd,
+  url_changed? : Dispatch[@url.Url],
+  url_request? : Dispatch[@url.UrlRequest],
 ) -> Unit {
-  @dom.window()
-  .to_event_target()
-  .add_event_listener("popstate", _ => {
-    guard (try? @url.parse(@dom.window().current_url())) is Ok(url)
-    match url_changed {
-      Some(f) => self.sandbox.add_cmds(f(url).to_array())
-      None => ()
+  if url_changed is Some(msg) {
+    for _, sub in @sub.on_url_changed(msg).to_map(@key.key, filter_global=false) {
+      let _ = sub(self.sandbox)
     }
-  })
-  self.sandbox.on_url_changed = url_changed.map(f => url => f(url).to_array())
-  self.sandbox.on_url_request = url_request.map(f => url => f(url).to_array())
-  if self.sandbox.mount != "" {
-    self.trigger_initial_url_changed()
+  }
+  if url_request is Some(msg) {
+    for _, sub in @sub.on_url_request(msg).to_map(@key.key, filter_global=false) {
+      let _ = sub(self.sandbox)
+    }
   }
 }
 
@@ -83,26 +81,16 @@ pub fn App::with_init(self : Self, cmd : Cmd) -> Unit {
 #cfg(target="js")
 pub fn App::mount(self : Self, element_id : String) -> Unit {
   self.sandbox.mount = element_id
-  self.trigger_initial_url_changed()
   @dom.document()
   .get_element_by_id(element_id)
   .unwrap()
   .set_inner_html("<div></div>")
   if self.init_cmd is Some(cmd) {
-    self.sandbox.add_cmds(cmd.to_array())
+    self.sandbox.add(cmd)
     self.init_cmd = None
   }
   self.sandbox.initialize()
   self.sandbox.flush()
-}
-
-///|
-#cfg(target="js")
-fn App::trigger_initial_url_changed(self : Self) -> Unit {
-  if self.sandbox.on_url_changed is Some(_) {
-    guard (try? @url.parse(@dom.window().current_url())) is Ok(url)
-    self.sandbox.add_url_changed(url)
-  }
 }
 
 ///|
