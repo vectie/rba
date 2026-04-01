@@ -106,8 +106,8 @@ Event arguments are typically functions returning `Cmd`. You can forward events 
 ```moonbit check
 ///|
 enum DrawMsg {
-  Start(Mouse)
-  End(Mouse)
+  Start(@html.Mouse)
+  End(@html.Mouse)
 }
 
 ///|

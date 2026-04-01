@@ -1,12 +1,18 @@
 # Subscription Example
 
-This example shows how to use Rabbita subscriptions in a browser app.
+This example is a minimal debugging page for Rabbita subscriptions.
 
-It demonstrates:
+It covers the non-animation subscriptions:
 
-- `@sub.every(1000, ...)` for a ticking counter
-- `@sub.on_resize(...)` for window resize events
-- `subscriptions=` changing with model state when the timer is paused or resumed
+- `every`
+- `on_resize`
+- `on_scroll`
+- `on_key_down`
+- `on_key_up`
+- `on_visibility_change`
+- `on_mouse_move`
+
+The `on_animation_frame` demo now lives in `examples/animation`.
 
 ## Run in development
 

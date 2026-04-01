@@ -1,0 +1,92 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px 48px;
+  gap: 40px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111;
+}
+
+.stage {
+  display: flex;
+  justify-content: center;
+}
+
+.tangram {
+  display: block;
+  width: min(100%, 400px);
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(18, 147, 216, 0.12));
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab {
+  padding: 8px 18px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tab:hover {
+  color: #1293d8;
+  border-color: #1293d8;
+}
+
+.active {
+  color: #fff;
+  background: #1293d8;
+  border-color: #1293d8;
+}
+
+.active:hover {
+  color: #fff;
+  background: #0f82c2;
+  border-color: #0f82c2;
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 40px 16px 32px;
+    gap: 32px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+}

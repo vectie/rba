@@ -1,16 +1,22 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "example/subscriptions/main"
+package "example/animation/main"
 
 // Values
 
 // Errors
 
 // Types and methods
+type LogoModel
+
+type LogoShape
+
 type Model
 
 type Msg
 
-type Tab
+type Pattern
+
+type Target
 
 // Type aliases
 

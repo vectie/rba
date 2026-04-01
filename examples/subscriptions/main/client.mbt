@@ -1,96 +1,340 @@
 ///|
-using @html {button, code, div, h1, p, text}
+using @html {button, code, div, h1, nothing, p}
 
 ///|
 using @rabbita {type Cmd, type Dispatch, type Html}
 
 ///|
+enum Tab {
+  Every
+  Resize
+  Scroll
+  KeyDown
+  KeyUp
+  VisibilityChange
+  MouseMove
+}
+
+///|
 enum Msg {
+  SelectTab(Tab)
   Tick
   ToggleTicker
-  Resized
+  Resized(Int, Int)
+  Scrolled(Int, Int, Int, Int)
+  KeyDownCaptured(String, String, Bool)
+  KeyUpCaptured(String, String)
+  VisibilityChanged(Bool)
+  MouseMoved(Int, Int)
 }
 
 ///|
 struct Model {
-  seconds : Int
-  resize_count : Int
+  active_tab : Tab
+  tick_count : Int
   ticking : Bool
+  resize_count : Int
+  viewport_width : Int
+  viewport_height : Int
+  scroll_count : Int
+  scroll_x : Int
+  scroll_y : Int
+  scroll_width : Int
+  scroll_height : Int
+  keydown_count : Int
+  last_key_down : String
+  last_key_down_code : String
+  last_key_down_repeat : Bool
+  keyup_count : Int
+  last_key_up : String
+  last_key_up_code : String
+  visibility_hidden : Bool
+  visibility_count : Int
+  mouse_moves : Int
+  mouse_x : Int
+  mouse_y : Int
+}
+
+///|
+fn tab_id(tab : Tab) -> Int {
+  match tab {
+    Every => 0
+    Resize => 1
+    Scroll => 2
+    KeyDown => 3
+    KeyUp => 4
+    VisibilityChange => 5
+    MouseMove => 6
+  }
+}
+
+///|
+fn tabs() -> Array[Tab] {
+  [Every, Resize, Scroll, KeyDown, KeyUp, VisibilityChange, MouseMove]
+}
+
+///|
+fn tab_title(tab : Tab) -> String {
+  match tab {
+    Every => "every"
+    Resize => "on_resize"
+    Scroll => "on_scroll"
+    KeyDown => "on_key_down"
+    KeyUp => "on_key_up"
+    VisibilityChange => "on_visibility_change"
+    MouseMove => "on_mouse_move"
+  }
+}
+
+///|
+fn tab_signature(tab : Tab) -> String {
+  match tab {
+    Every => "@sub.every(1000, dispatch(Tick))"
+    Resize => "@sub.on_resize(dispatch.map(v => Resized(v.width, v.height)))"
+    Scroll =>
+      "@sub.on_scroll(dispatch.map(s => { let p = s.offset_pos(); Scrolled(p.x, p.y, s.width(), s.height()) }))"
+    KeyDown =>
+      "@sub.on_key_down(dispatch.map(e => KeyDownCaptured(e.key(), e.code(), e.repeat())))"
+    KeyUp =>
+      "@sub.on_key_up(dispatch.map(e => KeyUpCaptured(e.key(), e.code())))"
+    VisibilityChange =>
+      "@sub.on_visibility_change(dispatch.map(hidden => VisibilityChanged(hidden)))"
+    MouseMove =>
+      "@sub.on_mouse_move(dispatch.map(e => { let p = e.client_pos(); MouseMoved(p.x, p.y) }))"
+  }
+}
+
+///|
+fn bool_label(value : Bool) -> String {
+  if value {
+    "true"
+  } else {
+    "false"
+  }
+}
+
+///|
+fn line(label : String, value : String) -> Html {
+  div(class="line") <| [
+    code(class="line-label", label),
+    p(class="line-value", value),
+  ]
+}
+
+///|
+fn tab_button(dispatch : Dispatch[Msg], active : Tab, tab : Tab) -> Html {
+  let class = if tab_id(active) == tab_id(tab) { "tab active" } else { "tab" }
+  button(class~, on_click=dispatch(SelectTab(tab)), tab_title(tab))
+}
+
+///|
+fn output_lines(model : Model) -> Array[Html] {
+  match model.active_tab {
+    Every =>
+      [
+        line("ticking", bool_label(model.ticking)),
+        line("tick_count", "\{model.tick_count}"),
+      ]
+    Resize =>
+      [
+        line("resize_count", "\{model.resize_count}"),
+        line("viewport_width", "\{model.viewport_width}"),
+        line("viewport_height", "\{model.viewport_height}"),
+      ]
+    Scroll =>
+      [
+        line("scroll_count", "\{model.scroll_count}"),
+        line("scroll_x", "\{model.scroll_x}"),
+        line("scroll_y", "\{model.scroll_y}"),
+        line("scroll_width", "\{model.scroll_width}"),
+        line("scroll_height", "\{model.scroll_height}"),
+      ]
+    KeyDown =>
+      [
+        line("keydown_count", "\{model.keydown_count}"),
+        line("last_key", model.last_key_down),
+        line("last_code", model.last_key_down_code),
+        line("repeat", bool_label(model.last_key_down_repeat)),
+      ]
+    KeyUp =>
+      [
+        line("keyup_count", "\{model.keyup_count}"),
+        line("last_key", model.last_key_up),
+        line("last_code", model.last_key_up_code),
+      ]
+    VisibilityChange =>
+      [
+        line("hidden", bool_label(model.visibility_hidden)),
+        line("visibility_count", "\{model.visibility_count}"),
+      ]
+    MouseMove =>
+      [
+        line("mouse_moves", "\{model.mouse_moves}"),
+        line("client_x", "\{model.mouse_x}"),
+        line("client_y", "\{model.mouse_y}"),
+      ]
+  }
+}
+
+///|
+fn active_actions(dispatch : Dispatch[Msg], model : Model) -> Array[Html] {
+  match model.active_tab {
+    Every =>
+      [
+        button(
+          class="toggle",
+          on_click=dispatch(ToggleTicker),
+          if model.ticking {
+            "pause"
+          } else {
+            "resume"
+          },
+        ),
+      ]
+    _ => []
+  }
 }
 
 ///|
 fn update(_ : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
   match msg {
-    Tick => (@rabbita.none, { ..model, seconds: model.seconds + 1 })
+    SelectTab(tab) => (@rabbita.none, { ..model, active_tab: tab })
+    Tick => (@rabbita.none, { ..model, tick_count: model.tick_count + 1 })
     ToggleTicker => (@rabbita.none, { ..model, ticking: !model.ticking })
-    Resized =>
-      (@rabbita.none, { ..model, resize_count: model.resize_count + 1 })
+    Resized(width, height) =>
+      (
+        @rabbita.none,
+        {
+          ..model,
+          resize_count: model.resize_count + 1,
+          viewport_width: width,
+          viewport_height: height,
+        },
+      )
+    Scrolled(x, y, width, height) =>
+      (
+        @rabbita.none,
+        {
+          ..model,
+          scroll_count: model.scroll_count + 1,
+          scroll_x: x,
+          scroll_y: y,
+          scroll_width: width,
+          scroll_height: height,
+        },
+      )
+    KeyDownCaptured(key, code, repeat) =>
+      (
+        @rabbita.none,
+        {
+          ..model,
+          keydown_count: model.keydown_count + 1,
+          last_key_down: key,
+          last_key_down_code: code,
+          last_key_down_repeat: repeat,
+        },
+      )
+    KeyUpCaptured(key, code) =>
+      (
+        @rabbita.none,
+        {
+          ..model,
+          keyup_count: model.keyup_count + 1,
+          last_key_up: key,
+          last_key_up_code: code,
+        },
+      )
+    VisibilityChanged(hidden) =>
+      (
+        @rabbita.none,
+        {
+          ..model,
+          visibility_hidden: hidden,
+          visibility_count: model.visibility_count + 1,
+        },
+      )
+    MouseMoved(x, y) =>
+      (
+        @rabbita.none,
+        { ..model, mouse_moves: model.mouse_moves + 1, mouse_x: x, mouse_y: y },
+      )
   }
 }
 
 ///|
 fn subscriptions(dispatch : Dispatch[Msg], model : Model) -> @sub.Sub {
-  println("sub")
-  @sub.batch([
-    @sub.on_resize(dispatch(Resized)),
-    if model.ticking {
-      @sub.every(1000, dispatch(Tick))
-    } else {
-      @sub.none
-    },
-  ])
-}
-
-///|
-fn toggle_label(ticking : Bool) -> String {
-  if ticking {
-    "Pause ticker"
-  } else {
-    "Resume ticker"
+  match model.active_tab {
+    Every =>
+      if model.ticking {
+        @sub.every(1000, dispatch(Tick))
+      } else {
+        @sub.none
+      }
+    Resize =>
+      @sub.on_resize(
+        dispatch.map(viewport => Resized(viewport.width, viewport.height)),
+      )
+    Scroll =>
+      @sub.on_scroll(
+        dispatch.map(scroll => {
+          let pos = scroll.offset_pos()
+          Scrolled(pos.x, pos.y, scroll.width(), scroll.height())
+        }),
+      )
+    KeyDown =>
+      @sub.on_key_down(
+        dispatch.map(event => {
+          KeyDownCaptured(event.key(), event.code(), event.repeat())
+        }),
+      )
+    KeyUp =>
+      @sub.on_key_up(
+        dispatch.map(event => KeyUpCaptured(event.key(), event.code())),
+      )
+    VisibilityChange =>
+      @sub.on_visibility_change(
+        dispatch.map(hidden => VisibilityChanged(hidden)),
+      )
+    MouseMove =>
+      @sub.on_mouse_move(
+        dispatch.map(event => {
+          let pos = event.client_pos()
+          MouseMoved(pos.x, pos.y)
+        }),
+      )
   }
 }
 
 ///|
 fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
-  let ticker_status = if model.ticking { "Active" } else { "Paused" }
-  div(class="page") <| [
+  let page_class = if tab_id(model.active_tab) == tab_id(Scroll) {
+    "page scroll-mode"
+  } else {
+    "page"
+  }
+  div(class=page_class) <| [
     div(class="panel") <| [
-      p(class="eyebrow", "Rabbita example"),
-      h1(class="title", "Subscriptions"),
-      p(
-        class="lead",
-        "This example wires a timer and a resize listener through the ",
-      ),
-      p(class="lead") <| [
-        code(class="inline-code", "subscriptions="),
-        text(" hook on a cell."),
+      h1(class="title", "subscriptions"),
+      div(class="tabs") <| tabs().map(tab => {
+        tab_button(dispatch, model.active_tab, tab)
+      }),
+      div(class="section") <| [
+        p(class="section-title", "subscription"),
+        code(class="snippet", tab_signature(model.active_tab)),
       ],
-      div(class="stats") <| [
-        div(class="stat") <| [
-          p(class="label", "Ticker status"),
-          p(class="value", ticker_status),
-        ],
-        div(class="stat") <| [
-          p(class="label", "Seconds from @sub.every"),
-          p(class="value", "\{model.seconds}"),
-        ],
-        div(class="stat") <| [
-          p(class="label", "Resize events from @sub.on_resize"),
-          p(class="value", "\{model.resize_count}"),
-        ],
+      div(class="actions") <| active_actions(dispatch, model),
+      div(class="section") <| [
+        p(class="section-title", "output"),
+        div(class="output") <| output_lines(model),
       ],
-      div(class="actions") <| [
-        button(
-          class="toggle",
-          on_click=dispatch(ToggleTicker),
-          toggle_label(model.ticking),
-        ),
-      ],
-      p(
-        class="note",
-        "Try resizing the window. Pause the ticker to see only the resize subscription stay active.",
-      ),
     ],
+    if tab_id(model.active_tab) == tab_id(Scroll) {
+      div(class="scroll-spacer") <| [
+        p(class="scroll-hint", "scroll the page to trigger on_scroll"),
+      ]
+    } else {
+      nothing
+    },
   ]
 }
 
@@ -98,7 +342,31 @@ fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
 #cfg(target="js")
 fn main {
   let app = @rabbita.cell(
-    model={ seconds: 0, resize_count: 0, ticking: true },
+    model={
+      active_tab: Every,
+      tick_count: 0,
+      ticking: true,
+      resize_count: 0,
+      viewport_width: @dom.window().inner_width(),
+      viewport_height: @dom.window().inner_height(),
+      scroll_count: 0,
+      scroll_x: @dom.window().scroll_x(),
+      scroll_y: @dom.window().scroll_y(),
+      scroll_width: 0,
+      scroll_height: 0,
+      keydown_count: 0,
+      last_key_down: "-",
+      last_key_down_code: "-",
+      last_key_down_repeat: false,
+      keyup_count: 0,
+      last_key_up: "-",
+      last_key_up_code: "-",
+      visibility_hidden: @dom.document().hidden(),
+      visibility_count: 0,
+      mouse_moves: 0,
+      mouse_x: 0,
+      mouse_y: 0,
+    },
     update~,
     view~,
     subscriptions~,
