@@ -5,6 +5,22 @@ type Document
 
 ///|
 #cfg(target="js")
+pub impl @js.Cast for Document with into(value) {
+  value |> ffi_to_document |> y => { y.to_option() }
+}
+
+///|
+#cfg(target="js")
+pub impl @js.Cast for Document with from(value) {
+  value |> js_identity
+}
+
+///|
+#cfg(target="js")
+pub impl IsEventTarget for Document
+
+///|
+#cfg(target="js")
 pub extern "js" fn document() -> Document = "() => document"
 
 ///|
@@ -109,6 +125,11 @@ pub extern "js" fn Document::query_selector_all(
   self : Self,
   selectors : String,
 ) -> NodeList = "(self,selectors) => self.querySelectorAll(selectors)"
+
+///|
+/// https://developer.mozilla.org/en-US/docs/Web/API/Document/hidden
+#cfg(target="js")
+pub extern "js" fn Document::hidden(self : Self) -> Bool = "(doc) => doc.hidden"
 
 ///|
 #cfg(target="js")

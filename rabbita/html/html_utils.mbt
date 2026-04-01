@@ -27,16 +27,53 @@ fn push_click(value : Cmd?, attrs : Attrs) -> Unit {
 }
 
 ///|
+fn mouse_from_dom(event : @dom.MouseEvent) -> Mouse {
+  Mouse::new(
+    screen={ x: event.get_screen_x(), y: event.get_screen_y() },
+    offset={ x: event.get_offset_x(), y: event.get_offset_y() },
+    client={ x: event.get_client_x(), y: event.get_client_y() },
+  )
+}
+
+///|
+fn keyboard_from_dom(event : @dom.KeyboardEvent) -> Keyboard {
+  Keyboard::new(
+    key=event.key(),
+    code=event.code(),
+    alt_key=event.alt_key(),
+    ctrl_key=event.ctrl_key(),
+    shift_key=event.shift_key(),
+    meta_key=event.meta_key(),
+    is_composing=event.is_composing(),
+    repeat=event.repeat(),
+    location=event.location(),
+  )
+}
+
+///|
+#cfg(target="js")
+fn scroll_from_dom(element : @dom.Element) -> Scroll {
+  Scroll::new(
+    offset={
+      x: element.get_scroll_left().to_int(),
+      y: element.get_scroll_top().to_int(),
+    },
+    width=element.get_scroll_width().to_int(),
+    height=element.get_scroll_height().to_int(),
+  )
+}
+
+///|
 fn push_mousedown(value : @cmd.Dispatch[Mouse]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
-    ignore(attrs.on_mousedown(event => v(Mouse(event))))
+    ignore(attrs.on_mousedown(event => v(mouse_from_dom(event))))
   }
 }
 
 ///|
 fn push_mouseup(value : @cmd.Dispatch[Mouse]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
-    ignore(attrs.on_mouseup(event => v(Mouse(event))))
+    ignore(attrs.on_mouseup(event => v(mouse_from_dom(event))))
   }
 }
 
@@ -47,7 +84,7 @@ fn push_scroll(value : @cmd.Dispatch[Scroll]?, attrs : Attrs) -> Unit {
     ignore(
       attrs.on_scroll(event => {
         let element = event.target().to_element().unwrap()
-        v(Scroll(element))
+        v(scroll_from_dom(element))
       }),
     )
   }
@@ -62,14 +99,14 @@ fn push_scroll(value : @cmd.Dispatch[Scroll]?, attrs : Attrs) -> Unit {
 ///|
 fn push_keydown(value : @cmd.Dispatch[Keyboard]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
-    ignore(attrs.on_keydown(event => v(Keyboard(event))))
+    ignore(attrs.on_keydown(event => v(keyboard_from_dom(event))))
   }
 }
 
 ///|
 fn push_keyup(value : @cmd.Dispatch[Keyboard]?, attrs : Attrs) -> Unit {
   if value is Some(v) {
-    ignore(attrs.on_keyup(event => v(Keyboard(event))))
+    ignore(attrs.on_keyup(event => v(keyboard_from_dom(event))))
   }
 }
 

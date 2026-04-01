@@ -3,6 +3,7 @@ package "moonbit-community/rabbita/sub"
 
 import {
   "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/common",
   "moonbit-community/rabbita/internal/interface",
 }
 
@@ -13,7 +14,19 @@ pub fn every(Int, @cmd.Cmd) -> Sub
 
 pub let none : Sub
 
-pub fn on_resize(@cmd.Cmd) -> Sub
+pub fn on_animation_frame(@cmd.Dispatch[Double]) -> Sub
+
+pub fn on_key_down(@cmd.Dispatch[@common.Keyboard]) -> Sub
+
+pub fn on_key_up(@cmd.Dispatch[@common.Keyboard]) -> Sub
+
+pub fn on_mouse_move(@cmd.Dispatch[@common.Mouse]) -> Sub
+
+pub fn on_resize(@cmd.Dispatch[@common.Viewport]) -> Sub
+
+pub fn on_scroll(@cmd.Dispatch[@common.Scroll]) -> Sub
+
+pub fn on_visibility_change(@cmd.Dispatch[Bool]) -> Sub
 
 // Errors
 

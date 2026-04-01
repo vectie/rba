@@ -74,6 +74,22 @@ pub extern "js" fn Window::replace_url(self : Self, url : String) =
   #| (self,url) => { self.history.replaceState(null, '', url); }
 
 ///|
+#cfg(target="js")
+pub extern "js" fn Window::inner_width(self : Self) -> Int = "(self) => self.innerWidth"
+
+///|
+#cfg(target="js")
+pub extern "js" fn Window::inner_height(self : Self) -> Int = "(self) => self.innerHeight"
+
+///|
+#cfg(target="js")
+pub extern "js" fn Window::scroll_x(self : Self) -> Int = "(self) => self.scrollX"
+
+///|
+#cfg(target="js")
+pub extern "js" fn Window::scroll_y(self : Self) -> Int = "(self) => self.scrollY"
+
+///|
 /// https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval
 #cfg(target="js")
 pub extern "js" fn Window::set_interval(

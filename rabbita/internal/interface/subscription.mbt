@@ -7,4 +7,4 @@ pub(open) trait Subscription {
 }
 
 ///|
-pub(all) struct CustomSubscription ((&Scheduler) -> () -> Unit)
+pub(all) struct CustomSubscription((&Scheduler) -> () -> Unit)

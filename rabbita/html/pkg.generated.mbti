@@ -3,9 +3,9 @@ package "moonbit-community/rabbita/html"
 
 import {
   "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/common",
   "moonbit-community/rabbita/dom",
   "moonbit-community/rabbita/internal/runtime",
-  "moonbitlang/core/debug",
   "moonbitlang/core/list",
 }
 
@@ -34,13 +34,13 @@ pub fn[C : IsChildren] bdo(style? : Array[String], id? : String, class? : String
 
 pub fn[C : IsChildren] blockquote(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] body(style? : Array[String], id? : String, class? : String, title? : String, lang? : String, dir? : String, hidden? : Bool, on_scroll? : @cmd.Dispatch[Scroll], on_keydown? : @cmd.Dispatch[Keyboard], on_keyup? : @cmd.Dispatch[Keyboard], attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] body(style? : Array[String], id? : String, class? : String, title? : String, lang? : String, dir? : String, hidden? : Bool, on_scroll? : @cmd.Dispatch[@common.Scroll], on_keydown? : @cmd.Dispatch[@common.Keyboard], on_keyup? : @cmd.Dispatch[@common.Keyboard], attrs? : Attrs, C) -> Html
 
 pub fn br(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs) -> Html
 
 pub fn[C : IsChildren] button(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, type_? : String, disabled? : Bool, name? : String, value? : String, autofocus? : Bool, on_click? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] canvas(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_mousedown? : @cmd.Dispatch[Mouse], on_mouseup? : @cmd.Dispatch[Mouse], on_scroll? : @cmd.Dispatch[Scroll], on_keydown? : @cmd.Dispatch[Keyboard], on_keyup? : @cmd.Dispatch[Keyboard], attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] canvas(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_mousedown? : @cmd.Dispatch[@common.Mouse], on_mouseup? : @cmd.Dispatch[@common.Mouse], on_scroll? : @cmd.Dispatch[@common.Scroll], on_keydown? : @cmd.Dispatch[@common.Keyboard], on_keyup? : @cmd.Dispatch[@common.Keyboard], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] caption(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -66,7 +66,7 @@ pub fn[C : IsChildren] dfn(style? : Array[String], id? : String, class? : String
 
 pub fn[C : IsChildren] dialog(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, open? : Bool, on_close? : @cmd.Dispatch[String], on_cancel? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] div(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @cmd.Cmd, on_mousedown? : @cmd.Dispatch[Mouse], on_mouseup? : @cmd.Dispatch[Mouse], on_scroll? : @cmd.Dispatch[Scroll], on_keydown? : @cmd.Dispatch[Keyboard], on_keyup? : @cmd.Dispatch[Keyboard], attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] div(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @cmd.Cmd, on_mousedown? : @cmd.Dispatch[@common.Mouse], on_mouseup? : @cmd.Dispatch[@common.Mouse], on_scroll? : @cmd.Dispatch[@common.Scroll], on_keydown? : @cmd.Dispatch[@common.Keyboard], on_keyup? : @cmd.Dispatch[@common.Keyboard], attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] dl(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
@@ -526,27 +526,6 @@ pub(all) enum InputType {
   Week
 }
 
-type Keyboard
-pub fn Keyboard::alt_key(Self) -> Bool
-pub fn Keyboard::code(Self) -> String
-pub fn Keyboard::ctrl_key(Self) -> Bool
-pub fn Keyboard::is_composing(Self) -> Bool
-pub fn Keyboard::key(Self) -> String
-pub fn Keyboard::location(Self) -> Int
-pub fn Keyboard::meta_key(Self) -> Bool
-pub fn Keyboard::repeat(Self) -> Bool
-pub fn Keyboard::shift_key(Self) -> Bool
-
-type Mouse
-pub fn Mouse::client_pos(Self) -> Pos
-pub fn Mouse::offset_pos(Self) -> Pos
-pub fn Mouse::screen_pos(Self) -> Pos
-
-pub(all) struct Pos {
-  x : Int
-  y : Int
-} derive(Show, @debug.Debug)
-
 pub(all) enum Scope {
   Row
   Col
@@ -554,17 +533,17 @@ pub(all) enum Scope {
   ColGroup
 }
 
-type Scroll
-pub fn Scroll::height(Self) -> Int
-pub fn Scroll::offset_pos(Self) -> Pos
-pub fn Scroll::width(Self) -> Int
-
 pub(all) enum Target {
   Self
   Blank
 }
 
 // Type aliases
+pub using @common {type Keyboard}
+
+pub using @common {type Mouse}
+
+pub using @common {type Scroll}
 
 // Traits
 pub trait IsChildren {

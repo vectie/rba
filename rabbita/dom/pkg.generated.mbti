@@ -232,9 +232,12 @@ pub fn Document::get_elements_by_class_name(Self, String) -> HTMLCollection
 pub fn Document::get_elements_by_name(Self, String) -> NodeList
 pub fn Document::get_elements_by_tag_name(Self, String) -> HTMLCollection
 pub fn Document::get_elements_by_tag_name_ns(Self, String, String) -> HTMLCollection
+pub fn Document::hidden(Self) -> Bool
 pub fn Document::query_selector(Self, String) -> @js.Nullable[Element]
 pub fn Document::query_selector_all(Self, String) -> NodeList
 pub fn Document::to_node(Self) -> Node
+pub impl IsEventTarget for Document
+pub impl @js.Cast for Document
 
 type DocumentFragment
 pub fn DocumentFragment::to_node(Self) -> Node
@@ -522,6 +525,8 @@ pub fn Window::confirm(Self, String) -> Bool
 pub fn Window::current_url(Self) -> String
 pub fn Window::history_go_back(Self) -> Unit
 pub fn Window::history_go_forward(Self) -> Unit
+pub fn Window::inner_height(Self) -> Int
+pub fn Window::inner_width(Self) -> Int
 pub fn Window::load_url(Self, String) -> Unit
 pub fn Window::navigator(Self) -> Navigator
 pub fn Window::push_url(Self, String) -> Unit
@@ -532,6 +537,8 @@ pub fn Window::scroll_by(Self, Int, Int) -> Unit
 pub fn Window::scroll_to(Self, Int, Int) -> Unit
 pub fn Window::scroll_to_bottom(Self) -> Unit
 pub fn Window::scroll_to_top(Self) -> Unit
+pub fn Window::scroll_x(Self) -> Int
+pub fn Window::scroll_y(Self) -> Int
 pub fn Window::set_interval(Self, () -> Unit, Int) -> Int
 pub fn Window::to_event_target(Self) -> EventTarget
 pub impl IsEventTarget for Window

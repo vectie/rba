@@ -2,7 +2,7 @@
 using @rabbita {type Dispatch}
 
 ///|
-using @html {type Html, div, h1, button, node}
+using @html {type Html, type Mouse, div, h1, button, node}
 
 ///|
 #warnings("-struct_never_constructed-unused_field")
