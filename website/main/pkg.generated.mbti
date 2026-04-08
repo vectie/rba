@@ -26,6 +26,7 @@ type TocEntry
 pub(all) struct TourChapter {
   title : String
   path : String
+  section : String
 }
 
 pub(all) struct TourModel {
