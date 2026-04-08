@@ -62,8 +62,3 @@ fn subscriptions(dispatch : Dispatch[Msg], _model : Model) -> @sub.Sub {
   ])
 }
 ```
-
-
-
-
-

@@ -1,0 +1,14 @@
+import {
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/dom",
+  "moonbit-community/rabbita/sub",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+  "moonbitlang/core/ref",
+}
+
+import {
+  "moonbit-community/rabbita/internal/key",
+} for "test"
+
+supported_targets = "js"

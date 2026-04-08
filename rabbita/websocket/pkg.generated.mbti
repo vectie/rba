@@ -1,0 +1,61 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita/websocket"
+
+import {
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/sub",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn close(String, code? : Int, reason? : String, failed? : @cmd.Dispatch[String]) -> @cmd.Cmd
+
+pub fn connect(String, String, protocols? : Array[String], on_event~ : @cmd.Dispatch[Event], failed? : @cmd.Dispatch[String]) -> @cmd.Cmd
+
+pub fn listen(String, protocols? : Array[String], open? : @cmd.Cmd, message? : @cmd.Dispatch[String], close? : @cmd.Dispatch[CloseInfo], error? : @cmd.Cmd) -> @sub.Sub
+
+pub fn send(String, Payload, failed? : @cmd.Dispatch[String]) -> @cmd.Cmd
+
+pub fn state(String, reply~ : @cmd.Dispatch[Result[Snapshot, String]]) -> @cmd.Cmd
+
+// Errors
+
+// Types and methods
+pub struct CloseInfo {
+  code : Int
+  reason : String
+  clean : Bool
+} derive(Show, @debug.Debug)
+
+pub(all) enum Event {
+  Opened
+  Message(String)
+  Closed(CloseInfo)
+  Errored
+} derive(Show, @debug.Debug)
+
+pub(all) enum Payload {
+  Text(String)
+  Json(Json)
+} derive(Show)
+pub impl @debug.Debug for Payload
+
+pub(all) enum ReadyState {
+  Connecting
+  Open
+  Closing
+  Closed
+} derive(Show, @debug.Debug)
+
+pub struct Snapshot {
+  id : String
+  url : String
+  protocol : String
+  buffered_amount : Int
+  ready_state : ReadyState
+} derive(Show, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

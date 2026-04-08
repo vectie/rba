@@ -30,6 +30,7 @@ pub trait IsEvent: @js.Cast {
   to_composition_event(Self) -> CompositionEvent? = _
   to_custom_event(Self) -> CustomEvent? = _
   to_drag_event(Self) -> DragEvent? = _
+  to_message_event(Self) -> MessageEvent? = _
   to_wheel_event(Self) -> WheelEvent? = _
 }
 
@@ -159,6 +160,12 @@ impl IsEvent with to_drag_event(s) {
 
 ///|
 #cfg(target="js")
+impl IsEvent with to_message_event(s) {
+  s |> js_identity |> ffi_to_message_event |> y => { y.to_option() }
+}
+
+///|
+#cfg(target="js")
 impl IsEvent with to_wheel_event(s) {
   s |> js_identity |> ffi_to_wheel_event |> y => { y.to_option() }
 }
@@ -255,6 +262,13 @@ extern "js" fn ffi_to_custom_event(x : @js.Value) -> @js.Nullable[CustomEvent] =
 #cfg(target="js")
 extern "js" fn ffi_to_drag_event(x : @js.Value) -> @js.Nullable[DragEvent] =
   #| (e) => e instanceof DragEvent ? e : null
+
+///|
+#cfg(target="js")
+extern "js" fn ffi_to_message_event(
+  x : @js.Value,
+) -> @js.Nullable[MessageEvent] =
+  #| (e) => e instanceof MessageEvent ? e : null
 
 ///|
 #cfg(target="js")

@@ -10,6 +10,8 @@ import {
 // Values
 pub fn batch(Array[Sub]) -> Sub
 
+pub fn custom_sub(String, Scope, Error, SubLoader) -> Sub
+
 pub fn every(Int, @cmd.Cmd) -> Sub
 
 pub let none : Sub
@@ -35,12 +37,23 @@ pub fn on_visibility_change(@cmd.Dispatch[Bool]) -> Sub
 // Errors
 
 // Types and methods
+pub(all) struct RunningSub {
+  unload : (&@cmd.Scheduler) -> Unit
+  update_tagger : (Error) -> Unit
+}
+
+pub(all) enum Scope {
+  Local
+  Global
+}
+
 type Sub
 
-// Type aliases
-pub type Disposer = (&@cmd.Scheduler) -> Unit
+pub(all) struct SubLoader((Error, &@cmd.Scheduler) -> RunningSub?)
+#deprecated
+pub fn SubLoader::inner(Self) -> (Error, &@cmd.Scheduler) -> RunningSub?
 
-pub type Initializer = (&@cmd.Scheduler) -> (&@cmd.Scheduler) -> Unit
+// Type aliases
 
 // Traits
 

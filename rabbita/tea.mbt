@@ -7,7 +7,7 @@ priv struct TypedCell[Model, Msg] {
   update : (Dispatch[Msg], Msg, Model) -> (Cmd, Model)
   view : (Dispatch[Msg], Model) -> @html.Html
   subscriptions : ((Dispatch[Msg], Model) -> @sub.Sub)?
-  mut sub_map : Map[String, @sub.Disposer]
+  mut sub_map : Map[String, @sub.RunningSub]
   flags : @runtime.Flags
 }
 
@@ -31,28 +31,32 @@ impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with init(
       filter_global=!self.flags().is_root,
     )
     for key, sub in subs {
-      self.sub_map[key] = sub(scheduler)
+      let (payload, loader) = sub
+      if loader(payload, scheduler) is Some(running) {
+        self.sub_map[key] = running
+      }
     }
   }
 }
 
 ///|
 fn diff_subs(
-  old_subs : Map[String, @sub.Disposer],
-  new_subs : Map[String, @sub.Initializer],
+  old_subs : Map[String, @sub.RunningSub],
+  new_subs : Map[String, (Error, @sub.SubLoader)],
   scheduler : &@cmd.Scheduler,
-) -> Map[String, @sub.Disposer] {
+) -> Map[String, @sub.RunningSub] {
   let sub_map = {}
-  for key, dispose in old_subs {
+  for key, sub in old_subs {
     if !new_subs.contains(key) {
-      dispose(scheduler)
+      (sub.unload)(scheduler)
     } else {
-      sub_map[key] = dispose
+      sub_map[key] = sub
     }
   }
   for key, sub in new_subs {
-    if !old_subs.contains(key) {
-      sub_map[key] = sub(scheduler)
+    let (payload, loader) = sub
+    if !old_subs.contains(key) && loader(payload, scheduler) is Some(running) {
+      sub_map[key] = running
     }
   }
   sub_map

@@ -2,29 +2,273 @@
 using @common {type Keyboard, type Mouse, type Scroll, type Viewport}
 
 ///|
-using @cmd {type Cmd, trait Scheduler}
+using @cmd {trait Scheduler, type Cmd, type Dispatch}
 
 ///|
 /// A long-lived subscription managed by the Rabbita runtime.
 ///
 /// Use subscriptions to listen to external signals such as timers, window
-/// resize, scrolling, keyboard input, or visibility changes.
+/// resize, scrolling, keyboard input, visibility changes, or WebSocket events.
 enum Sub {
-  Custom(String, Scope, Initializer)
+  Custom(String, Scope, Error, SubLoader)
   Batch(Array[Sub])
 }
 
 ///|
-priv enum Scope {
-  Local
-  Global
+/// Custom subscriptions loader. 
+pub(all) struct SubLoader((Error, &Scheduler) -> RunningSub?)
+
+///|
+pub(all) struct RunningSub {
+  unload : (&Scheduler) -> Unit
+  update_tagger : (Error) -> Unit
 }
 
 ///|
-pub type Initializer = (&Scheduler) -> Disposer
+/// Create a custom subscription
+pub fn custom_sub(
+  key : String,
+  scope : Scope,
+  payload : Error,
+  loader : SubLoader,
+) -> Sub {
+  Custom(key, scope, payload, loader)
+}
 
 ///|
-pub type Disposer = (&Scheduler) -> Unit
+priv suberror BuiltinSub {
+  Every(Int, Cmd)
+  AnimationFrame(Dispatch[Double])
+  Keydown(Dispatch[Keyboard])
+  Keyup(Dispatch[Keyboard])
+  MouseMove(Dispatch[Mouse])
+  Resize(Dispatch[Viewport])
+  UrlChanged(Dispatch[@url.Url])
+  UrlRequest(Dispatch[@url.UrlRequest])
+  Scroll(Dispatch[Scroll])
+  VisibilityChange(Dispatch[Bool])
+}
+
+///|
+fn builtin_sub_loader(payload : Error, scheduler : &Scheduler) -> RunningSub? {
+  match payload {
+    Every(ms, cmd) => {
+      let tagger = @ref.Ref(cmd)
+      let id = @dom.window().set_interval(() => scheduler.add(tagger.val), ms)
+      let unload = _ => @dom.window().clear_interval(id)
+      let update_tagger = self => {
+        guard self is BuiltinSub::Every(_, new_cmd) else { return }
+        tagger.val = new_cmd
+      }
+      Some({ unload, update_tagger })
+    }
+    AnimationFrame(cmd) => {
+      let tagger = @ref.Ref(cmd)
+      let mut active = true
+      let mut request_id : Double? = None
+
+      fn queue_next() {
+        request_id = Some(
+          @dom.window().request_animation_frame(timestamp => {
+            guard active else { return }
+            scheduler.add((tagger.val)(timestamp))
+            queue_next()
+          }),
+        )
+      }
+
+      queue_next()
+      let unload = _ => {
+        active = false
+        guard request_id is Some(id) else { return }
+        @dom.window().cancel_animation_frame(id)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::AnimationFrame(new_cmd) else { return }
+        tagger.val = new_cmd
+      }
+      Some({ unload, update_tagger })
+    }
+    Keydown(cmd) => {
+      let tagger = @ref.Ref(cmd)
+      let listener : @dom.Listener = event => {
+        scheduler.add(
+          (tagger.val)(keyboard_from_dom(event.to_keyboard_event().unwrap())),
+        )
+      }
+      let unload = _ => {
+        @dom.document()
+        .as_event_target()
+        .remove_event_listener("keydown", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::Keydown(new_cmd) else { return }
+        tagger.val = new_cmd
+      }
+      @dom.document().as_event_target().add_event_listener("keydown", listener)
+      Some({ unload, update_tagger })
+    }
+    Keyup(cmd) => {
+      let tagger = @ref.Ref(cmd)
+      let listener : @dom.Listener = event => {
+        scheduler.add(
+          (tagger.val)(keyboard_from_dom(event.to_keyboard_event().unwrap())),
+        )
+      }
+      let unload = _ => {
+        @dom.document()
+        .as_event_target()
+        .remove_event_listener("keyup", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::Keyup(new_cmd) else { return }
+        tagger.val = new_cmd
+      }
+      @dom.document().as_event_target().add_event_listener("keyup", listener)
+      Some({ unload, update_tagger })
+    }
+    MouseMove(cmd) => {
+      let tagger = @ref.Ref(cmd)
+      let listener : @dom.Listener = event => {
+        scheduler.add(
+          (tagger.val)(mouse_from_dom(event.to_mouse_event().unwrap())),
+        )
+      }
+      let unload = _ => {
+        @dom.document()
+        .as_event_target()
+        .remove_event_listener("mousemove", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::MouseMove(new_cmd) else { return }
+        tagger.val = new_cmd
+      }
+      @dom.document()
+      .as_event_target()
+      .add_event_listener("mousemove", listener)
+      Some({ unload, update_tagger })
+    }
+    Resize(cmd) => {
+      let mut tagger = cmd
+      let listener : @dom.Listener = event => {
+        ignore(event)
+        scheduler.add(
+          tagger({
+            width: @dom.window().inner_width(),
+            height: @dom.window().inner_height(),
+          }),
+        )
+      }
+      let unload = _ => {
+        @dom.window()
+        .as_event_target()
+        .remove_event_listener("resize", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::Resize(new_cmd) else { return }
+        tagger = new_cmd
+      }
+      @dom.window().as_event_target().add_event_listener("resize", listener)
+      Some({ unload, update_tagger })
+    }
+    Scroll(cmd) => {
+      let mut tagger = cmd
+      let listener : @dom.Listener = event => {
+        ignore(event)
+        scheduler.add(tagger(window_scroll()))
+      }
+      let unload = _ => {
+        @dom.window()
+        .as_event_target()
+        .remove_event_listener("scroll", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::Scroll(new_cmd) else { return }
+        tagger = new_cmd
+      }
+      @dom.window().as_event_target().add_event_listener("scroll", listener)
+      Some({ unload, update_tagger })
+    }
+    UrlChanged(cmd) => {
+      let mut tagger = cmd
+      scheduler.hooks().url_changed = Some((scheduler, url) => {
+        try @url.parse(url) catch {
+          e => println("failed to parse \{url}: \{e}")
+        } noraise {
+          url => scheduler.add(tagger(url))
+        }
+      })
+
+      let listener : @dom.Listener = _ => {
+        if scheduler.hooks().url_changed is Some(hook) {
+          hook(scheduler, @dom.window().current_url())
+        }
+      }
+      let unload = _ => {
+        scheduler.hooks().url_changed = None
+        @dom.window()
+        .to_event_target()
+        .remove_event_listener("popstate", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::UrlChanged(new_cmd) else { return }
+        tagger = new_cmd
+      }
+      @dom.window().to_event_target().add_event_listener("popstate", listener)
+      Some({ unload, update_tagger })
+    }
+    UrlRequest(cmd) => {
+      let mut tagger = cmd
+      scheduler.hooks().url_request = Some((scheduler, href) => {
+        let curr = try! @url.parse(@dom.window().current_url())
+        let next = try! @url.parse(href)
+        let request = if curr.protocol == next.protocol &&
+          curr.host == next.host &&
+          curr.port == next.port {
+          @url.Internal(next)
+        } else {
+          External(href)
+        }
+        scheduler.add(tagger(request))
+      })
+
+      fn unload(_) {
+        scheduler.hooks().url_request = None
+      }
+      fn update_tagger(self) {
+        guard self is BuiltinSub::UrlRequest(new_cmd) else { return }
+        tagger = new_cmd
+      }
+      Some({ unload, update_tagger })
+    }
+    VisibilityChange(cmd) => {
+      let mut tagger = cmd
+      let listener : @dom.Listener = _ => {
+        scheduler.add(tagger(@dom.document().hidden()))
+      }
+      let unload = _ => {
+        @dom.document()
+        .as_event_target()
+        .remove_event_listener("visibilitychange", listener)
+      }
+      let update_tagger = self => {
+        guard self is BuiltinSub::VisibilityChange(new_cmd) else { return }
+        tagger = new_cmd
+      }
+      @dom.document()
+      .as_event_target()
+      .add_event_listener("visibilitychange", listener)
+      Some({ unload, update_tagger })
+    }
+    _ => None
+  }
+}
+
+///|
+pub(all) enum Scope {
+  Local
+  Global
+}
 
 ///|
 #doc(hidden)
@@ -32,41 +276,17 @@ pub fn Sub::to_map(
   self : Self,
   _ : @key.Key,
   filter_global~ : Bool,
-) -> Map[String, Initializer] {
+) -> Map[String, (Error, SubLoader)] {
   let map = {}
   fn go(s) {
     match s {
-      Custom(_, Global, _) if filter_global => ()
-      Custom(k, _, v) => map[k] = v
+      Custom(_, Global, _, _) if filter_global => ()
+      Custom(k, _, h, v) => map[k] = (h, v)
       Batch(xs) => xs.each(go)
     }
   }
   go(self)
   map
-}
-
-///|
-fn custom_subscription(
-  key : String,
-  scope : Scope,
-  load : (&Scheduler) -> (&Scheduler) -> Unit,
-) -> Sub {
-  Custom(key, scope, load)
-}
-
-///|
-fn event_subscription(
-  key : String,
-  scope : Scope,
-  target : @dom.EventTarget,
-  event_name : String,
-  handler : (@dom.Event) -> Cmd,
-) -> Sub {
-  custom_subscription(key, scope, scheduler => {
-    let listener : @dom.Listener = event => scheduler.add(handler(event))
-    target.add_event_listener(event_name, listener)
-    _ => target.remove_event_listener(event_name, listener)
-  })
 }
 
 ///|
@@ -106,10 +326,7 @@ fn window_scroll() -> Scroll {
 ///|
 /// Repeatedly enqueue `cmd` every `ms` milliseconds.
 pub fn every(ms : Int, cmd : @cmd.Cmd) -> Sub {
-  custom_subscription("every(\{ms})", Local, scheduler => {
-    let id : Int = @dom.window().set_interval(() => scheduler.add(cmd), ms)
-    fn(_) { @dom.window().clear_interval(id) }
-  })
+  custom_sub("every(\{ms})", Local, Every(ms, cmd), builtin_sub_loader)
 }
 
 ///|
@@ -117,19 +334,7 @@ pub fn every(ms : Int, cmd : @cmd.Cmd) -> Sub {
 ///
 /// The handler receives the latest viewport width and height.
 pub fn on_resize(msg : @cmd.Dispatch[Viewport]) -> Sub {
-  event_subscription(
-    "on_resize",
-    Local,
-    @dom.window().as_event_target(),
-    "resize",
-    event => {
-      ignore(event)
-      msg({
-        width: @dom.window().inner_width(),
-        height: @dom.window().inner_height(),
-      })
-    },
-  )
+  custom_sub("on_resize", Local, Resize(msg), builtin_sub_loader)
 }
 
 ///|
@@ -138,27 +343,12 @@ pub fn on_resize(msg : @cmd.Dispatch[Viewport]) -> Sub {
 /// The handler receives the browser timestamp for each frame while the
 /// subscription is active.
 pub fn on_animation_frame(msg : @cmd.Dispatch[Double]) -> Sub {
-  custom_subscription("on_animation_frame", Local, scheduler => {
-    let mut active = true
-    let mut request_id : Double? = None
-
-    fn queue_next() {
-      request_id = Some(
-        @dom.window().request_animation_frame(timestamp => {
-          guard active else { return }
-          scheduler.add(msg(timestamp))
-          queue_next()
-        }),
-      )
-    }
-
-    queue_next()
-    fn(_) {
-      active = false
-      guard request_id is Some(id) else { return }
-      @dom.window().cancel_animation_frame(id)
-    }
-  })
+  custom_sub(
+    "on_animation_frame",
+    Local,
+    AnimationFrame(msg),
+    builtin_sub_loader,
+  )
 }
 
 ///|
@@ -166,13 +356,7 @@ pub fn on_animation_frame(msg : @cmd.Dispatch[Double]) -> Sub {
 ///
 /// The handler receives a normalized `Keyboard` value from `@common`.
 pub fn on_key_down(msg : @cmd.Dispatch[Keyboard]) -> Sub {
-  event_subscription(
-    "on_key_down",
-    Local,
-    @dom.document().as_event_target(),
-    "keydown",
-    event => msg(keyboard_from_dom(event.to_keyboard_event().unwrap())),
-  )
+  custom_sub("on_key_down", Local, Keydown(msg), builtin_sub_loader)
 }
 
 ///|
@@ -180,13 +364,7 @@ pub fn on_key_down(msg : @cmd.Dispatch[Keyboard]) -> Sub {
 ///
 /// The handler receives a normalized `Keyboard` value from `@common`.
 pub fn on_key_up(msg : @cmd.Dispatch[Keyboard]) -> Sub {
-  event_subscription(
-    "on_key_up",
-    Local,
-    @dom.document().as_event_target(),
-    "keyup",
-    event => msg(keyboard_from_dom(event.to_keyboard_event().unwrap())),
-  )
+  custom_sub("on_key_up", Local, Keyup(msg), builtin_sub_loader)
 }
 
 ///|
@@ -195,12 +373,11 @@ pub fn on_key_up(msg : @cmd.Dispatch[Keyboard]) -> Sub {
 /// The handler receives `true` when the document is hidden, and `false`
 /// when it becomes visible again.
 pub fn on_visibility_change(msg : @cmd.Dispatch[Bool]) -> Sub {
-  event_subscription(
+  custom_sub(
     "on_visibility_change",
     Local,
-    @dom.document().as_event_target(),
-    "visibilitychange",
-    _ => msg(@dom.document().hidden()),
+    VisibilityChange(msg),
+    builtin_sub_loader,
   )
 }
 
@@ -209,13 +386,7 @@ pub fn on_visibility_change(msg : @cmd.Dispatch[Bool]) -> Sub {
 ///
 /// The handler receives a normalized `Mouse` value from `@common`.
 pub fn on_mouse_move(msg : @cmd.Dispatch[Mouse]) -> Sub {
-  event_subscription(
-    "on_mouse_move",
-    Local,
-    @dom.document().as_event_target(),
-    "mousemove",
-    event => msg(mouse_from_dom(event.to_mouse_event().unwrap())),
-  )
+  custom_sub("on_mouse_move", Local, MouseMove(msg), builtin_sub_loader)
 }
 
 ///|
@@ -225,16 +396,7 @@ pub fn on_mouse_move(msg : @cmd.Dispatch[Mouse]) -> Sub {
 /// element. The handler receives the current scroll offset and document scroll
 /// size as a `Scroll` value.
 pub fn on_scroll(msg : @cmd.Dispatch[Scroll]) -> Sub {
-  event_subscription(
-    "on_scroll",
-    Local,
-    @dom.window().as_event_target(),
-    "scroll",
-    event => {
-      ignore(event)
-      msg(window_scroll())
-    },
-  )
+  custom_sub("on_scroll", Local, Scroll(msg), builtin_sub_loader)
 }
 
 ///|
@@ -244,29 +406,7 @@ pub fn on_scroll(msg : @cmd.Dispatch[Scroll]) -> Sub {
 /// the root cell's `subscriptions` callback; if a non-root cell returns it,
 /// the subscription is ignored.
 pub fn on_url_changed(msg : @cmd.Dispatch[@url.Url]) -> Sub {
-  custom_subscription("on_url_changed", Global, scheduler => {
-    scheduler.hooks().url_changed = Some((scheduler, url) => {
-      try @url.parse(url) catch {
-        e => println("failed to parse \{url}: \{e}")
-      } noraise {
-        url => scheduler.add(msg(url))
-      }
-    })
-
-    let listener = fn(_) {
-      if scheduler.hooks().url_changed is Some(hook) {
-        hook(scheduler, @dom.window().current_url())
-      }
-    }
-    @dom.window().to_event_target().add_event_listener("popstate", listener)
-
-    fn(_) {
-      scheduler.hooks().url_changed = None
-      @dom.window()
-      .to_event_target()
-      .remove_event_listener("popstate", listener)
-    }
-  })
+  custom_sub("on_url_changed", Global, UrlChanged(msg), builtin_sub_loader)
 }
 
 ///|
@@ -276,22 +416,7 @@ pub fn on_url_changed(msg : @cmd.Dispatch[@url.Url]) -> Sub {
 /// the root cell's `subscriptions` callback; if a non-root cell returns it,
 /// the subscription is ignored.
 pub fn on_url_request(msg : @cmd.Dispatch[@url.UrlRequest]) -> Sub {
-  custom_subscription("on_url_request", Global, scheduler => {
-    scheduler.hooks().url_request = Some((scheduler, href) => {
-      let curr = try! @url.parse(@dom.window().current_url())
-      let next = try! @url.parse(href)
-      let request = if curr.protocol == next.protocol &&
-        curr.host == next.host &&
-        curr.port == next.port {
-        @url.Internal(next)
-      } else {
-        External(href)
-      }
-      scheduler.add(msg(request))
-    })
-
-    fn(_) { scheduler.hooks().url_request = None }
-  })
+  custom_sub("on_url_request", Global, UrlRequest(msg), builtin_sub_loader)
 }
 
 ///|

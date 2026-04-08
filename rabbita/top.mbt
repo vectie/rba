@@ -54,12 +54,14 @@ pub fn App::with_route(
 ) -> Unit {
   if url_changed is Some(msg) {
     for _, sub in @sub.on_url_changed(msg).to_map(@key.key, filter_global=false) {
-      let _ = sub(self.sandbox)
+      let (payload, loader) = sub
+      let _ = loader(payload, self.sandbox)
     }
   }
   if url_request is Some(msg) {
     for _, sub in @sub.on_url_request(msg).to_map(@key.key, filter_global=false) {
-      let _ = sub(self.sandbox)
+      let (payload, loader) = sub
+      let _ = loader(payload, self.sandbox)
     }
   }
 }

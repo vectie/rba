@@ -425,6 +425,12 @@ type MediaKeys
 
 type MediaStream
 
+type MessageEvent
+pub fn MessageEvent::get_data(Self) -> @js.Value
+pub fn MessageEvent::get_data_string(Self) -> String?
+pub impl IsEvent for MessageEvent
+pub impl @js.Cast for MessageEvent
+
 type MouseEvent
 pub impl IsEvent for MouseEvent
 pub impl IsMouseEvent for MouseEvent
@@ -506,6 +512,23 @@ type VideoTrackList
 type WebGL2RenderingContext
 
 type WebGLRenderingContext
+
+type WebSocket
+pub fn WebSocket::close(Self) -> Unit
+pub fn WebSocket::close_quietly(Self) -> Unit
+pub fn WebSocket::close_safe(Self, code? : Int, reason? : String) -> Result[Unit, String]
+pub fn WebSocket::close_with_code_reason(Self, Int, String) -> Unit
+pub fn WebSocket::get_buffered_amount(Self) -> Int
+pub fn WebSocket::get_protocol(Self) -> String
+pub fn WebSocket::get_ready_state(Self) -> Int
+pub fn WebSocket::get_url(Self) -> String
+pub fn WebSocket::new(String) -> Self
+pub fn WebSocket::new_with_protocols(String, Array[String]) -> Self
+pub fn WebSocket::open(String, protocols? : Array[String]) -> Result[Self, String]
+pub fn WebSocket::send(Self, String) -> Unit
+pub fn WebSocket::send_safe(Self, String) -> Result[Unit, String]
+pub impl IsEventTarget for WebSocket
+pub impl @js.Cast for WebSocket
 
 type WheelEvent
 pub fn WheelEvent::get_delta_mode(Self) -> Int
@@ -591,6 +614,7 @@ pub trait IsEvent : @js.Cast {
   to_composition_event(Self) -> CompositionEvent?
   to_custom_event(Self) -> CustomEvent?
   to_drag_event(Self) -> DragEvent?
+  to_message_event(Self) -> MessageEvent?
   to_wheel_event(Self) -> WheelEvent?
 }
 
