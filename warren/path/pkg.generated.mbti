@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/warren/path"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+type ArtifactPath
+pub fn ArtifactPath::join_module_path(Self, MooncakesPath) -> Self
+pub fn ArtifactPath::join_relative(Self, String) -> Self
+pub fn ArtifactPath::new(SourcePath) -> Self
+pub fn ArtifactPath::to_string(Self, Target, Build, Mode) -> SourcePath
+pub impl @debug.Debug for ArtifactPath
+
+pub(all) enum Build {
+  Release
+  Debug
+} derive(Eq, Hash, @debug.Debug)
+
+pub(all) enum Mode {
+  Check
+  Build
+} derive(Eq, Hash, @debug.Debug)
+
+type MooncakesPath derive(Compare, Eq)
+pub fn MooncakesPath::join(Self, String) -> Self
+pub fn MooncakesPath::new(String) -> Self
+pub fn MooncakesPath::to_string(Self) -> String
+pub impl Show for MooncakesPath
+pub impl @debug.Debug for MooncakesPath
+
+type SourcePath derive(Eq)
+pub fn SourcePath::join(Self, String) -> Self
+pub fn SourcePath::new(String) -> Self
+pub fn SourcePath::relative(Self, Self) -> String
+pub impl Show for SourcePath
+pub impl @debug.Debug for SourcePath
+
+pub(all) enum Target {
+  Wasm
+  WasmGC
+  Js
+  Native
+} derive(Eq, Hash, @debug.Debug)
+
+// Type aliases
+pub using @moonbitlang/x/path {type Path}
+
+// Traits
+

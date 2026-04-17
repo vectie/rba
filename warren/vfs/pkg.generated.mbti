@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/warren/vfs"
+
+import {
+  "moonbit-community/warren/path",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+type VirtualFileSystem
+pub fn VirtualFileSystem::mount(Self, String, VirtualFs) -> Unit
+#as_free_fn
+pub fn VirtualFileSystem::new(Map[String, VirtualFs]) -> Self
+pub async fn VirtualFileSystem::read(Self, String) -> String?
+
+pub(all) enum VirtualFs {
+  DirectoryMapping(@path.SourcePath)
+  FileMapping(@path.SourcePath)
+  DirectoryContent(Map[String, VirtualFs])
+  FileContent(String)
+}
+
+// Type aliases
+
+// Traits
+

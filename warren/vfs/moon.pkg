@@ -1,0 +1,6 @@
+import {
+  "moonbitlang/async/fs",
+  "moonbit-community/warren/path",
+}
+
+supported_targets = "native"

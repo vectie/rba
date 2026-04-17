@@ -1,0 +1,6 @@
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/x/path" @p,
+}
+
+supported_targets = "native"

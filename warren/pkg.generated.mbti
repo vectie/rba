@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/warren"
+
+// Values
+
+// Errors
+
+// Types and methods
+type DevEvent
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/async/fs",
+  "moonbitlang/core/queue",
+  "moonbit-community/warren/path",
+  "moonbit-community/warren/configs",
+}
+
+supported_targets = "native"
