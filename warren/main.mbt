@@ -44,7 +44,7 @@ async fn main {
 
       dev_server(SourcePath::new(cwd))
     }
-    "build" => abort("`warren build` is not supported yet")
+    "build" => build_project(SourcePath::new(cwd))
     _ => ()
   }
 }
