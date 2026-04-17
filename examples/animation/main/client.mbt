@@ -18,7 +18,6 @@ struct Model {
   logo_pattern_index : Int
 }
 
-
 ///|
 fn update(_ : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
   match msg {
@@ -39,7 +38,9 @@ fn subscriptions(dispatch : Dispatch[Msg], _ : Model) -> @sub.Sub {
 fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
   div(class="page") <| [
     h1(class="title", "Rabbita Animation"),
-    div(class="stage") <| [logo_view(model.logo)],
+    div(class="stage") <| [
+      logo_view(model.logo),
+    ],
     div(class="actions") <| animation_actions(dispatch, model),
   ]
 }

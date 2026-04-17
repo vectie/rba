@@ -55,11 +55,7 @@ fn animation_pattern_button(
   active_index : Int,
   index : Int,
 ) -> @rabbita.Html {
-  let class = if active_index == index {
-    "tab active"
-  } else {
-    "tab"
-  }
+  let class = if active_index == index { "tab active" } else { "tab" }
   @html.button(
     class~,
     on_click=dispatch(SelectPattern(index)),
@@ -76,4 +72,3 @@ fn animation_actions(
     animation_pattern_button(dispatch, model.logo_pattern_index, index)
   })
 }
-

@@ -25,16 +25,8 @@ the example useful for demoing and testing both styles side by side.
 In this directory:
 
 ```bash
-npm install
-npm run dev
+moon install moonbit-community/warren
+warren dev
 ```
 
-Then open the local URL shown by Vite (usually `http://localhost:5173`).
-
-## Build
-
-```bash
-npm run build
-```
-
-The built assets are generated in `dist/`.
+Then open the local URL shown by warren.
