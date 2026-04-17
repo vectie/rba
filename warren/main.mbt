@@ -212,6 +212,8 @@ async fn update(model : Model, msg : Msg) -> Model {
       } else {
         vfs.mount("/index.html", FileContent(html_template))
       }
+    } else {
+      vfs.mount("/index.html", FileContent(html_template))
     }
     vfs
   }
