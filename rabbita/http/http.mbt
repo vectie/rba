@@ -2,7 +2,14 @@
 using @cmd {type Cmd, trait Scheduler, type Dispatch}
 
 ///|
+using @dom {type Blob}
+
+///|
 using @json {trait FromJson}
+
+///|
+/// Raw value of an HTTP `Content-Type` header.
+pub type ContentType = String
 
 ///|
 struct Request {
@@ -44,12 +51,48 @@ pub fn RequestWithBody::with_text(
 }
 
 ///|
+/// Attach raw bytes to the request body.
+///
+/// `content_type` is used as the request `Content-Type` header.
+///
+/// ```mbt nocheck
+/// @http.post("api/file").with_bytes("application/pdf", data).expect_empty(x => dispatch(FileSent(x)))
+/// ```
+pub fn RequestWithBody::with_bytes(
+  self : RequestWithBody,
+  content_type : ContentType,
+  x : Bytes,
+) -> Request {
+  {
+    url: self.url,
+    http_method: self.http_method,
+    body: BytesBody(content_type, x),
+  }
+}
+
+///|
+/// Attach a blob to the request body.
+///
+/// The request `Content-Type` header is taken from `x.get_type()`.
+///
+/// ```mbt nocheck
+/// @http.post("api/file").with_blob(file).expect_empty(x => dispatch(FileSent(x)))
+/// ```
+pub fn RequestWithBody::with_blob(self : RequestWithBody, x : Blob) -> Request {
+  {
+    url: self.url,
+    http_method: self.http_method,
+    body: BlobBody(x.get_type(), x),
+  }
+}
+
+///|
 /// Expect a message with a `Result[T, Error]` payload.
 /// 
 /// On success, the result contains `T`; on failure, it contains an `Error`.
 /// The response body is parsed as JSON and decoded into `T`.
-/// If `with_json` or `with_text` is not called first, the request is sent with
-/// an empty body.
+/// If `with_json`, `with_text`, `with_bytes`, or `with_blob` is not called
+/// first, the request is sent with an empty body.
 /// 
 /// ```mbt nocheck
 /// @http.post("api/ping").expect_json(x => dispatch(PingLoaded(x)))
@@ -79,12 +122,84 @@ pub fn[T : FromJson] RequestWithBody::expect_json(
 }
 
 ///|
+/// Expect a message with a `Result[Blob, Error]` payload.
+/// 
+/// On success, the result contains `Blob`; on failure, it contains an `Error`.
+/// The response body is returned as a `Blob`.
+/// If `with_json`, `with_text`, `with_bytes`, or `with_blob` is not called
+/// first, the request is sent with an empty body.
+/// 
+/// ```mbt nocheck
+/// @http.post("api/file").expect_blob(x => dispatch(FileLoaded(x)))
+/// ```
+/// 
+/// It is recommended to process the blob when handling the `FileLoaded`
+/// message in `update`, rather than in the callback.
+/// **Keep the callback passed to `expect_blob` short and clean.**
+/// 
+/// ### Anti-pattern:
+/// - embedding logic in the callback
+///     ```mbt nocheck
+///     @http.post("api/file").expect_blob(result => {
+///       let processed = process(result)
+///       dispatch(FileLoaded(processed))
+///     })
+///     ```
+/// - ignoring the returned `Cmd`
+///     ```
+///     @http.post("api/file").expect_blob(x => dispatch(FileLoaded(x))) |> ignore
+///     ```
+pub fn RequestWithBody::expect_blob(
+  self : RequestWithBody,
+  msg : Dispatch[Result[Blob, Error]],
+) -> Cmd {
+  { url: self.url, http_method: self.http_method, body: Empty }.expect_blob(msg)
+}
+
+///|
+/// Expect a message with a `Result[(ContentType, Bytes), Error]` payload.
+/// 
+/// On success, the result contains the response `Content-Type` and raw bytes;
+/// on failure, it contains an `Error`.
+/// If `with_json`, `with_text`, `with_bytes`, or `with_blob` is not called
+/// first, the request is sent with an empty body.
+/// 
+/// ```mbt nocheck
+/// @http.post("api/file").expect_bytes(x => dispatch(FileBytesLoaded(x)))
+/// ```
+/// 
+/// It is recommended to process the bytes when handling the
+/// `FileBytesLoaded` message in `update`, rather than in the callback.
+/// **Keep the callback passed to `expect_bytes` short and clean.**
+/// 
+/// ### Anti-pattern:
+/// - embedding logic in the callback
+///     ```mbt nocheck
+///     @http.post("api/file").expect_bytes(result => {
+///       let processed = process(result)
+///       dispatch(FileBytesLoaded(processed))
+///     })
+///     ```
+/// - ignoring the returned `Cmd`
+///     ```
+///     @http.post("api/file").expect_bytes(x => dispatch(FileBytesLoaded(x))) |> ignore
+///     ```
+pub fn RequestWithBody::expect_bytes(
+  self : RequestWithBody,
+  msg : Dispatch[Result[(ContentType, Bytes), Error]],
+) -> Cmd {
+  { url: self.url, http_method: self.http_method, body: Empty }.expect_bytes(
+    msg,
+  )
+}
+
+///|
 /// Expect a message with a `Result[String, Error]` payload.
 /// 
 /// On success, the result contains `String`; on failure, it contains an
 /// `Error`. The response body is returned as plain text.
-/// If `with_json` or `with_text` is not called first, the request is sent with
-/// an empty body.
+/// If `with_json`, `with_text`, `with_bytes`, or `with_blob` is not called
+/// first, the request is sent with an empty body.
 /// 
 /// ```mbt nocheck
 /// @http.post("api/ping").expect_text(x => dispatch(PingTextLoaded(x)))
@@ -118,8 +233,8 @@ pub fn RequestWithBody::expect_text(
 /// 
 /// On success, the result is `None`; on failure, it is `Some(error)`.
 /// The response body is ignored.
-/// If `with_json` or `with_text` is not called first, the request is sent with
-/// an empty body.
+/// If `with_json`, `with_text`, `with_bytes`, or `with_blob` is not called
+/// first, the request is sent with an empty body.
 /// 
 /// ```mbt nocheck
 /// @http.post("api/ping").expect_empty(x => dispatch(PingFinished(x)))
@@ -180,11 +295,92 @@ pub fn[T : FromJson] Request::expect_json(
   self : Request,
   msg : Dispatch[Result[T, Error]],
 ) -> Cmd {
-  self.send(
-    on_success=body => {
+  self.send_response(
+    response_kind="text",
+    on_text=body => {
       let result : Result[T, Error] = try? @json.from_json(@json.parse(body))
       msg(result)
     },
+    on_blob=_ => @cmd.none,
+    on_bytes=(_, _) => @cmd.none,
+    on_failure=error => msg(Err(error)),
+  )
+}
+
+///|
+/// Expect a message with a `Result[Blob, Error]` payload.
+/// 
+/// On success, the result contains `Blob`; on failure, it contains an `Error`.
+/// The response body is returned as a `Blob`.
+/// 
+/// ```mbt nocheck
+/// @http.get("api/file").expect_blob(x => dispatch(FileLoaded(x)))
+/// ```
+/// 
+/// It is recommended to process the blob when handling the `FileLoaded`
+/// message in `update`, rather than in the callback.
+/// **Keep the callback passed to `expect_blob` short and clean.**
+/// 
+/// ### Anti-pattern:
+/// - embedding logic in the callback
+///     ```mbt nocheck
+///     @http.get("api/file").expect_blob(result => {
+///       let processed = process(result)
+///       dispatch(FileLoaded(processed))
+///     })
+///     ```
+/// - ignoring the returned `Cmd`
+///     ```
+///     @http.get("api/file").expect_blob(x => dispatch(FileLoaded(x))) |> ignore
+///     ```
+pub fn Request::expect_blob(
+  self : Request,
+  msg : Dispatch[Result[Blob, Error]],
+) -> Cmd {
+  self.send_response(
+    response_kind="blob",
+    on_text=_ => @cmd.none,
+    on_blob=blob => msg(Ok(blob)),
+    on_bytes=(_, _) => @cmd.none,
+    on_failure=error => msg(Err(error)),
+  )
+}
+
+///|
+/// Expect a message with a `Result[(ContentType, Bytes), Error]` payload.
+/// 
+/// On success, the result contains the response `Content-Type` and raw bytes;
+/// on failure, it contains an `Error`.
+/// 
+/// ```mbt nocheck
+/// @http.get("api/file").expect_bytes(x => dispatch(FileBytesLoaded(x)))
+/// ```
+/// 
+/// It is recommended to process the bytes when handling the
+/// `FileBytesLoaded` message in `update`, rather than in the callback.
+/// **Keep the callback passed to `expect_bytes` short and clean.**
+/// 
+/// ### Anti-pattern:
+/// - embedding logic in the callback
+///     ```mbt nocheck
+///     @http.get("api/file").expect_bytes(result => {
+///       let processed = process(result)
+///       dispatch(FileBytesLoaded(processed))
+///     })
+///     ```
+/// - ignoring the returned `Cmd`
+///     ```
+///     @http.get("api/file").expect_bytes(x => dispatch(FileBytesLoaded(x))) |> ignore
+///     ```
+pub fn Request::expect_bytes(
+  self : Request,
+  msg : Dispatch[Result[(ContentType, Bytes), Error]],
+) -> Cmd {
+  self.send_response(
+    response_kind="bytes",
+    on_text=_ => @cmd.none,
+    on_blob=_ => @cmd.none,
+    on_bytes=(content_type, bytes) => msg(Ok((content_type, bytes))),
     on_failure=error => msg(Err(error)),
   )
 }
@@ -219,9 +415,13 @@ pub fn Request::expect_text(
   self : Request,
   msg : Dispatch[Result[String, Error]],
 ) -> Cmd {
-  self.send(on_success=body => msg(Ok(body)), on_failure=error => {
-    msg(Err(error))
-  })
+  self.send_response(
+    response_kind="text",
+    on_text=body => msg(Ok(body)),
+    on_blob=_ => @cmd.none,
+    on_bytes=(_, _) => @cmd.none,
+    on_failure=error => msg(Err(error)),
+  )
 }
 
 ///|
@@ -251,15 +451,21 @@ pub fn Request::expect_text(
 ///     @http.delete("api/user/1").expect_empty(x => dispatch(UserDeleted(x))) |> ignore
 ///     ```
 pub fn Request::expect_empty(self : Request, msg : Dispatch[Error?]) -> Cmd {
-  self.send(on_success=_ => msg(None), on_failure=error => msg(Some(error)))
+  self.send_response(
+    response_kind="text",
+    on_text=_ => msg(None),
+    on_blob=_ => @cmd.none,
+    on_bytes=(_, _) => @cmd.none,
+    on_failure=error => msg(Some(error)),
+  )
 }
 
 ///|
 /// Create a `GET` request.
 /// 
 /// The request body is empty.
-/// Finish the request with `expect_json`, `expect_text`, or `expect_empty` to
-/// turn it into a `Cmd`.
+/// Finish the request with `expect_json`, `expect_blob`, `expect_bytes`,
+/// `expect_text`, or `expect_empty` to turn it into a `Cmd`.
 /// 
 /// ```mbt nocheck
 /// @http.get("api/user").expect_json(x => dispatch(UserLoaded(x)))
@@ -292,8 +498,8 @@ pub fn get(url : String) -> Request {
 /// Create a `DELETE` request.
 /// 
 /// The request body is empty.
-/// Finish the request with `expect_json`, `expect_text`, or `expect_empty` to
-/// turn it into a `Cmd`.
+/// Finish the request with `expect_json`, `expect_blob`, `expect_bytes`,
+/// `expect_text`, or `expect_empty` to turn it into a `Cmd`.
 /// 
 /// ```mbt nocheck
 /// @http.delete("api/user/1").expect_empty(x => dispatch(UserDeleted(x)))
@@ -325,8 +531,10 @@ pub fn delete(url : String) -> Request {
 ///|
 /// Create a `POST` request.
 /// 
-/// The request body is empty unless `with_json` or `with_text` is called first.
-/// Finish the request with `expect_json`, `expect_text`, or `expect_empty`.
+/// The request body is empty unless `with_json`, `with_text`, `with_bytes`, or
+/// `with_blob` is called first.
+/// Finish the request with `expect_json`, `expect_blob`, `expect_bytes`,
+/// `expect_text`, or `expect_empty`.
 /// 
 /// ```mbt nocheck
 /// @http.post("api/user").with_json(payload).expect_empty(x => dispatch(UserCreated(x)))
@@ -361,8 +569,10 @@ pub fn post(url : String) -> RequestWithBody {
 ///|
 /// Create a `PATCH` request.
 /// 
-/// The request body is empty unless `with_json` or `with_text` is called first.
-/// Finish the request with `expect_json`, `expect_text`, or `expect_empty`.
+/// The request body is empty unless `with_json`, `with_text`, `with_bytes`, or
+/// `with_blob` is called first.
+/// Finish the request with `expect_json`, `expect_blob`, `expect_bytes`,
+/// `expect_text`, or `expect_empty`.
 /// 
 /// ```mbt nocheck
 /// @http.patch("api/user/1").with_json(payload).expect_empty(x => dispatch(UserPatched(x)))
@@ -397,8 +607,10 @@ pub fn patch(url : String) -> RequestWithBody {
 ///|
 /// Create a `PUT` request.
 /// 
-/// The request body is empty unless `with_json` or `with_text` is called first.
-/// Finish the request with `expect_json`, `expect_text`, or `expect_empty`.
+/// The request body is empty unless `with_json`, `with_text`, `with_bytes`, or
+/// `with_blob` is called first.
+/// Finish the request with `expect_json`, `expect_blob`, `expect_bytes`,
+/// `expect_text`, or `expect_empty`.
 /// 
 /// ```mbt nocheck
 /// @http.put("api/user/1").with_json(payload).expect_empty(x => dispatch(UserReplaced(x)))
@@ -438,6 +650,8 @@ pub fn put(url : String) -> RequestWithBody {
 pub(all) enum Body {
   Json(Json)
   Text(String)
+  BytesBody(ContentType, Bytes)
+  BlobBody(ContentType, Blob)
   Empty
 }
 
@@ -447,24 +661,39 @@ pub(all) suberror RequestError {
 }
 
 ///|
-fn Request::send(
+fn Request::send_response(
   self : Request,
-  on_success~ : (String) -> Cmd,
+  response_kind~ : String,
+  on_text~ : (String) -> Cmd,
+  on_blob~ : (Blob) -> Cmd,
+  on_bytes~ : (ContentType, Bytes) -> Cmd,
   on_failure~ : (Error) -> Cmd,
 ) -> Cmd {
   @cmd.custom_cmd(fn(scheduler : &Scheduler) {
-    let (content_type, body, has_body) = match self.body {
-      Json(json) => ("application/json", json.stringify(), true)
-      Text(text) => ("text/plain", text, true)
-      Empty => ("text/plain", "", false)
+    let (content_type, body_kind, text_body, bytes_body, blob_body) = match
+      self.body {
+      Json(json) =>
+        ("application/json", "text", json.stringify(), Bytes::default(), None)
+      Text(text) => ("text/plain", "text", text, Bytes::default(), None)
+      BytesBody(content_type, bytes) => (content_type, "bytes", "", bytes, None)
+      BlobBody(content_type, blob) =>
+        (content_type, "blob", "", Bytes::default(), Some(blob))
+      Empty => ("", "empty", "", Bytes::default(), None)
     }
     js_request(
       self.url,
       self.http_method,
       content_type~,
-      body~,
-      has_body~,
-      succeed=body => scheduler.add(on_success(body)),
+      body_kind~,
+      response_kind~,
+      text_body~,
+      bytes_body~,
+      blob_body=@js.Nullable::from_option(blob_body),
+      succeed_text=text => scheduler.add(on_text(text)),
+      succeed_blob=blob => scheduler.add(on_blob(blob)),
+      succeed_bytes=(content_type, bytes) => {
+        scheduler.add(on_bytes(content_type, bytes))
+      },
       failed=detail => {
         scheduler.add(on_failure(RequestError("Http request failed:\{detail}")))
       },
@@ -477,21 +706,51 @@ extern "js" fn js_request(
   url : String,
   http_method : String,
   content_type~ : String,
-  body~ : String,
-  has_body~ : Bool,
-  succeed~ : (String) -> Unit,
+  body_kind~ : String,
+  response_kind~ : String,
+  text_body~ : String,
+  bytes_body~ : Bytes,
+  blob_body~ : @js.Nullable[Blob],
+  succeed_text~ : (String) -> Unit,
+  succeed_blob~ : (Blob) -> Unit,
+  succeed_bytes~ : (ContentType, Bytes) -> Unit,
   failed~ : (String) -> Unit,
 ) =
-  #| (url, method, contentType, body, hasBody, succeed, failed) => {
-  #|   const config = {
-  #|     method,
-  #|     headers: { "Content-Type": contentType },
-  #|   };
-  #|   if (hasBody) {
-  #|     config.body = body;
+  #| (url, method, contentType, bodyKind, responseKind, textBody, bytesBody, blobBody, succeedText, succeedBlob, succeedBytes, failed) => {
+  #|   const config = { method };
+  #|   if (contentType !== "") {
+  #|     config.headers = { "Content-Type": contentType };
+  #|   }
+  #|   switch (bodyKind) {
+  #|     case "text":
+  #|       config.body = textBody;
+  #|       break;
+  #|     case "bytes":
+  #|       config.body = bytesBody;
+  #|       break;
+  #|     case "blob":
+  #|       config.body = blobBody;
+  #|       break;
   #|   }
   #|   fetch(url, config)
-  #|     .then((response) => response.text())
-  #|     .then((text) => succeed(text))
+  #|     .then((response) => {
+  #|       switch (responseKind) {
+  #|         case "text":
+  #|           return response.text().then((text) => succeedText(text));
+  #|         case "blob":
+  #|           return response.blob().then((blob) => succeedBlob(blob));
+  #|         case "bytes": {
+  #|           const responseContentType = response.headers.get("Content-Type");
+  #|           if (!responseContentType) {
+  #|             throw new Error("Missing Content-Type header");
+  #|           }
+  #|           return response
+  #|             .arrayBuffer()
+  #|             .then((buffer) => succeedBytes(responseContentType, new Uint8Array(buffer)));
+  #|         }
+  #|         default:
+  #|           throw new Error(`Unknown response kind: ${responseKind}`);
+  #|       }
+  #|     })
   #|     .catch((error) => failed(error.toString()));
   #| }
