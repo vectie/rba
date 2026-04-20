@@ -3,18 +3,24 @@ package "moonbit-community/rabbita/http"
 
 import {
   "moonbit-community/rabbita/cmd",
+  "moonbitlang/core/json",
 }
 
 // Values
-pub fn[Model] delete(String, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
+pub fn delete(String) -> Request
 
-pub fn[Model] get(String, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
+pub fn get(String) -> Request
 
-pub fn[Model] patch(String, Body, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
+pub fn patch(String, Body) -> Request
 
-pub fn[Model] post(String, Body, expect~ : Expecting[@cmd.Cmd, Model]) -> @cmd.Cmd
+pub fn post(String, Body) -> Request
+
+pub fn put(String, Body) -> Request
 
 // Errors
+pub(all) suberror RequestError {
+  RequestError(String)
+}
 
 // Types and methods
 pub(all) enum Body {
@@ -23,10 +29,15 @@ pub(all) enum Body {
   Empty
 }
 
-pub(all) enum Expecting[Msg, Model] {
-  Json((Result[Model, String]) -> Msg, (Json) -> Result[Model, String])
-  Text((Result[String, String]) -> Msg)
+pub struct Request {
+  url : String
+  http_method : String
+  body : Body
 }
+pub fn[T : @json.FromJson] Request::expect(Self, @cmd.Dispatch[Result[T, Error]]) -> @cmd.Cmd
+pub fn Request::expect_empty(Self, @cmd.Dispatch[Error?]) -> @cmd.Cmd
+pub fn Request::expect_json(Self, @cmd.Dispatch[Result[Json, Error]]) -> @cmd.Cmd
+pub fn Request::expect_text(Self, @cmd.Dispatch[Result[String, Error]]) -> @cmd.Cmd
 
 // Type aliases
 
