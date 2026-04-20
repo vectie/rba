@@ -22,7 +22,7 @@ pub(all) struct TourChapter {
   title : String
   path : String // e.g. "001_intro" — used as URL slug and to locate doc files
   section : String // section name for sidebar grouping
-}
+} derive(FromJson)
 
 // ─── Tour Chapters (default fallback) ────────────────────────────────────
 
@@ -110,72 +110,6 @@ fn chapter_idx_from_path(chapters : Array[TourChapter], path : String) -> Int {
 }
 
 // ─── Menu / Chapter Fetch ─────────────────────────────────────────────────
-
-///|
-fn parse_menu(json : Json) -> Result[Array[TourChapter], String] {
-  guard json is Array(sections) else {
-    return Err("expected JSON array of sections")
-  }
-  let chapters : Array[TourChapter] = []
-  for sec in sections {
-    guard sec is Object(obj) else { return Err("expected section object") }
-    let section = match obj.get("section") {
-      Some(String(s)) => s
-      _ => return Err("missing section name")
-    }
-    let items = match obj.get("items") {
-      Some(Array(arr)) => arr
-      _ => return Err("missing items array")
-    }
-    for item in items {
-      guard item is Object(o) else { return Err("expected object in items") }
-      let title = match o.get("title") {
-        Some(String(s)) => s
-        _ => return Err("missing title")
-      }
-      let path = match o.get("path") {
-        Some(String(s)) => s
-        _ => return Err("missing path")
-      }
-      chapters.push({ title, path, section })
-    }
-  }
-  Ok(chapters)
-}
-
-///|
-fn fetch_menu(dispatch : Dispatch[Msg]) -> @rabbita.Cmd {
-  let url = site_base_url() + "doc/menu.json"
-  let expect : @http.Expecting[@rabbita.Cmd, Array[TourChapter]] = @http.Expecting::Json(
-    fn(result) {
-      match result {
-        Ok(chapters) => dispatch(MenuLoaded(chapters))
-        Err(_) => @rabbita.none
-      }
-    },
-    parse_menu,
-  )
-  @http.get(url, expect~)
-}
-
-///|
-fn fetch_chapter(
-  dispatch : Dispatch[Msg],
-  chapters : Array[TourChapter],
-  idx : Int,
-) -> @rabbita.Cmd {
-  let safe_idx = if idx >= 0 && idx < chapters.length() { idx } else { 0 }
-  let url = chapter_base_url(chapters[safe_idx]) + "readme.mbt.md"
-  let expect : @http.Expecting[@rabbita.Cmd, Unit] = @http.Expecting::Text(fn(
-    result,
-  ) {
-    match result {
-      Ok(text) => dispatch(TourContent(text))
-      Err(_) => dispatch(TourFailed)
-    }
-  })
-  @http.get(url, expect~)
-}
 
 // ─── Markdown Helpers ─────────────────────────────────────────────────────
 

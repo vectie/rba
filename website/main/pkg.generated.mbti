@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "rabbita/website/main"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
 pub let init_tour : TourModel
 
@@ -27,7 +31,7 @@ pub(all) struct TourChapter {
   title : String
   path : String
   section : String
-}
+} derive(@json.FromJson)
 
 pub(all) struct TourModel {
   chapter_idx : Int

@@ -80,9 +80,8 @@ enum Msg {
   CopiedStep(Int)
   ClearCopied
   SelectChapter(Int)
-  TourContent(String)
-  TourFailed
-  MenuLoaded(Array[TourChapter])
+  ChapterFetched(Result[String, Error])
+  MenuFetched(Result[Array[TourChapter], Error])
   LoadResult(Result[@shiki.Highlighter, Error])
   UrlChanged(@url.Url)
   UrlRequest(@url.UrlRequest)
@@ -183,25 +182,28 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         }
         _ => (@rabbita.none, model)
       }
-    TourContent(s) =>
+    ChapterFetched(result) =>
       match model.page {
         Tour(tm) =>
-          (
-            @rabbita.none,
-            { ..model, page: Tour({ ..tm, content: s, failed: false }) },
-          )
+          match result {
+            Ok(text) =>
+              (
+                @rabbita.none,
+                { ..model, page: Tour({ ..tm, content: text, failed: false }) },
+              )
+            Err(_) =>
+              (
+                @rabbita.none,
+                { ..model, page: Tour({ ..tm, content: "", failed: true }) },
+              )
+          }
         _ => (@rabbita.none, model)
       }
-    TourFailed =>
-      match model.page {
-        Tour(tm) =>
-          (
-            @rabbita.none,
-            { ..model, page: Tour({ ..tm, content: "", failed: true }) },
-          )
-        _ => (@rabbita.none, model)
+    MenuFetched(result) =>
+      match result {
+        Ok(chs) => (@rabbita.none, { ..model, chapters: chs })
+        Err(_) => (@rabbita.none, model)
       }
-    MenuLoaded(chs) => (@rabbita.none, { ..model, chapters: chs })
     LoadResult(Ok(hl)) => (@rabbita.none, { ..model, highlighter: Some(hl) })
     LoadResult(Err(_)) => (@rabbita.none, model)
     UrlRequest(req) =>
@@ -224,8 +226,18 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         if already_loaded {
           (scroll_cmd, model)
         } else {
+          let safe_idx = if idx >= 0 && idx < model.chapters.length() {
+            idx
+          } else {
+            0
+          }
           (
-            batch([fetch_chapter(dispatch, model.chapters, idx), scroll_cmd]),
+            batch([
+              @http.get(
+                chapter_base_url(model.chapters[safe_idx]) + "readme.mbt.md",
+              ).expect_text(x => dispatch(ChapterFetched(x))),
+              scroll_cmd,
+            ]),
             {
               ..model,
               page: Tour({ chapter_idx: idx, content: "", failed: false }),
@@ -1038,7 +1050,9 @@ fn main {
   @rabbita.new(app)
   ..with_init(
     batch([
-      fetch_menu(dispatch),
+      @http.get(site_base_url() + "doc/menu.json").expect(x => {
+        dispatch(MenuFetched(x))
+      }),
       @shiki.load(
         ["moonbit", "javascript"],
         ["github-light", "github-dark-default"],
