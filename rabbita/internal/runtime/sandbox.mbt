@@ -1,4 +1,5 @@
 ///|
+#cfg(target="js")
 using @queue {type Queue}
 
 ///|

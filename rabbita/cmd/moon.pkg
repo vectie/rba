@@ -5,4 +5,6 @@ import {
   "moonbitlang/core/queue",
 }
 
+warnings = "-unused_package"
+
 supported_targets = "js+native"

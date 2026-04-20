@@ -72,13 +72,16 @@ need VDOM diffing and patching.
 
 ```moonbit check
 ///|
+#cfg(target="js")
 using @html {fragment, input, nothing, ul, li, p}
 
 ///|
+#cfg(target="js")
 using @list {type List, empty}
 
 ///|
 /// The todo plan
+#cfg(target="js")
 fn plan(name : String) -> Cell {
   struct Model {
     value : String

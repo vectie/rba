@@ -125,7 +125,7 @@ struct App {
 ///   let page = @rabbita.simple_cell(
 ///     model={ todos: ["todo1", "todo2"] },
 ///     update=(_ : Msg, model) => model,
-///     view=(_, model) => ul(model.todos.map(x => li(x))),
+///     view=(_, model) => @html.ul(model.todos.map(x => @html.li(x))),
 ///   )
 ///   inspect(
 ///     @rabbita.render_to_string(page),

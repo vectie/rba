@@ -10,7 +10,8 @@ import {
 // Errors
 
 // Types and methods
-type Id derive(Compare, Eq, Hash, Show)
+type Id derive(Compare, Eq, Hash)
+pub impl Show for Id
 
 type InstId derive(Eq, Hash)
 
@@ -35,7 +36,8 @@ pub fn Mouse::screen_pos(Self) -> Pos
 pub(all) struct Pos {
   x : Int
   y : Int
-} derive(Show, @debug.Debug)
+} derive(@debug.Debug)
+pub impl Show for Pos
 
 type Scroll derive(@debug.Debug)
 pub fn Scroll::height(Self) -> Int
@@ -46,7 +48,8 @@ pub fn Scroll::width(Self) -> Int
 pub(all) struct Viewport {
   width : Int
   height : Int
-} derive(Show, @debug.Debug)
+} derive(@debug.Debug)
+pub impl Show for Viewport
 
 // Type aliases
 

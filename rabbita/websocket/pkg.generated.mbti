@@ -25,19 +25,22 @@ pub struct CloseInfo {
   code : Int
   reason : String
   clean : Bool
-} derive(Show, @debug.Debug)
+} derive(@debug.Debug)
+pub impl Show for CloseInfo
 
 pub(all) enum Event {
   Opened
   Message(String)
   Closed(CloseInfo)
   Errored
-} derive(Show, @debug.Debug)
+} derive(@debug.Debug)
+pub impl Show for Event
 
 pub(all) enum Payload {
   Text(String)
   Json(Json)
-} derive(Show)
+}
+pub impl Show for Payload
 pub impl @debug.Debug for Payload
 
 pub(all) enum ReadyState {
@@ -45,7 +48,8 @@ pub(all) enum ReadyState {
   Open
   Closing
   Closed
-} derive(Show, @debug.Debug)
+} derive(@debug.Debug)
+pub impl Show for ReadyState
 
 pub struct Snapshot {
   id : String
@@ -53,7 +57,8 @@ pub struct Snapshot {
   protocol : String
   buffered_amount : Int
   ready_state : ReadyState
-} derive(Show, @debug.Debug)
+} derive(@debug.Debug)
+pub impl Show for Snapshot
 
 // Type aliases
 

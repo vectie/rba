@@ -26,14 +26,18 @@ enum Msg2 {
 }
 
 ///|
-#cfg(target="js")
 test {
   ignore(view)
   ignore(view2)
-  ignore(update2)
   ignore(html)
   ignore(html1)
   ignore(html2)
+}
+
+///|
+#cfg(target="js")
+test {
+  ignore(update2)
 }
 
 ///|

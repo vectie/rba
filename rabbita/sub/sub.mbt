@@ -1,8 +1,13 @@
 ///|
+#cfg(target="js")
 using @common {type Keyboard, type Mouse, type Scroll, type Viewport}
 
 ///|
-using @cmd {trait Scheduler, type Cmd, type Dispatch}
+using @cmd {trait Scheduler}
+
+///|
+#cfg(target="js")
+using @cmd {type Cmd, type Dispatch}
 
 ///|
 /// A long-lived subscription managed by the Rabbita runtime.
@@ -36,6 +41,7 @@ pub fn custom_sub(
 }
 
 ///|
+#cfg(target="js")
 priv suberror BuiltinSub {
   Every(Int, Cmd)
   AnimationFrame(Dispatch[Double])

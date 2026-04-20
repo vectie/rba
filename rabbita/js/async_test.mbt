@@ -1,15 +1,18 @@
 ///|
+#cfg(target="js")
 fn op1() -> String? noraise {
   Some("Hello")
 }
 
 ///|
+#cfg(target="js")
 fn op2() -> String? noraise {
   guard op1() is Some(prefix)
   Some(prefix + ", World")
 }
 
 ///|
+#cfg(target="js")
 fn op3() -> String? noraise {
   None
 }

@@ -2,7 +2,11 @@
 using @cmd {trait Scheduler}
 
 ///|
-using @common {type InstId, type Id}
+using @common {type Id}
+
+///|
+#cfg(target="js")
+using @common {type InstId}
 
 ///|
 pub enum VNode {
@@ -22,10 +26,7 @@ priv enum INode {
 }
 
 ///|
-#cfg(not(target="js"))
-type INode = Unit
-
-///|
+#cfg(target="js")
 priv struct Instance {
   cell : &IsCell
   mut inode : INode?
@@ -36,6 +37,7 @@ priv struct Instance {
 }
 
 ///|
+#cfg(target="js")
 fn Instance::new(cell : &IsCell) -> Self {
   {
     cell,
@@ -573,6 +575,7 @@ fn diff_children(
 }
 
 ///|
+#cfg(target="js")
 fn[A, B] Children::map(c : Children[A], f : (A) -> B) -> Children[B] {
   match c {
     Array(arr) => Array(arr.map(f))

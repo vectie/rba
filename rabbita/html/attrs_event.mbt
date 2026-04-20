@@ -420,7 +420,6 @@ pub fn Attrs::on_paste(self : Attrs, msg : (ClipboardEvent) -> Cmd) -> Attrs {
 }
 
 ///|
-#cfg(target="js")
 pub fn Attrs::on_compositionstart(
   self : Attrs,
   msg : (CompositionEvent) -> Cmd,
@@ -429,17 +428,6 @@ pub fn Attrs::on_compositionstart(
 }
 
 ///|
-#cfg(not(target="js"))
-pub fn Attrs::on_compositionstart(
-  self : Attrs,
-  msg : (CompositionEvent) -> Cmd,
-) -> Attrs {
-  ignore(msg)
-  self
-}
-
-///|
-#cfg(target="js")
 pub fn Attrs::on_compositionupdate(
   self : Attrs,
   msg : (CompositionEvent) -> Cmd,
@@ -448,30 +436,9 @@ pub fn Attrs::on_compositionupdate(
 }
 
 ///|
-#cfg(not(target="js"))
-pub fn Attrs::on_compositionupdate(
-  self : Attrs,
-  msg : (CompositionEvent) -> Cmd,
-) -> Attrs {
-  ignore(msg)
-  self
-}
-
-///|
-#cfg(target="js")
 pub fn Attrs::on_compositionend(
   self : Attrs,
   msg : (CompositionEvent) -> Cmd,
 ) -> Attrs {
   self.on_composition_event("compositionend", msg)
-}
-
-///|
-#cfg(not(target="js"))
-pub fn Attrs::on_compositionend(
-  self : Attrs,
-  msg : (CompositionEvent) -> Cmd,
-) -> Attrs {
-  ignore(msg)
-  self
 }

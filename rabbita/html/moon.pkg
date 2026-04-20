@@ -12,4 +12,6 @@ import {
   "moonbit-community/rabbita",
 } for "test"
 
+warnings = "-unused_package"
+
 supported_targets = "js+native"
