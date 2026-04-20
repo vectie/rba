@@ -11,11 +11,11 @@ pub fn delete(String) -> Request
 
 pub fn get(String) -> Request
 
-pub fn patch(String, Body) -> Request
+pub fn patch(String) -> RequestWithBody
 
-pub fn post(String, Body) -> Request
+pub fn post(String) -> RequestWithBody
 
-pub fn put(String, Body) -> Request
+pub fn put(String) -> RequestWithBody
 
 // Errors
 pub(all) suberror RequestError {
@@ -29,15 +29,17 @@ pub(all) enum Body {
   Empty
 }
 
-pub struct Request {
-  url : String
-  http_method : String
-  body : Body
-}
-pub fn[T : @json.FromJson] Request::expect(Self, @cmd.Dispatch[Result[T, Error]]) -> @cmd.Cmd
+type Request
 pub fn Request::expect_empty(Self, @cmd.Dispatch[Error?]) -> @cmd.Cmd
-pub fn Request::expect_json(Self, @cmd.Dispatch[Result[Json, Error]]) -> @cmd.Cmd
+pub fn[T : @json.FromJson] Request::expect_json(Self, @cmd.Dispatch[Result[T, Error]]) -> @cmd.Cmd
 pub fn Request::expect_text(Self, @cmd.Dispatch[Result[String, Error]]) -> @cmd.Cmd
+
+type RequestWithBody
+pub fn RequestWithBody::expect_empty(Self, @cmd.Dispatch[Error?]) -> @cmd.Cmd
+pub fn[T : @json.FromJson] RequestWithBody::expect_json(Self, @cmd.Dispatch[Result[T, Error]]) -> @cmd.Cmd
+pub fn RequestWithBody::expect_text(Self, @cmd.Dispatch[Result[String, Error]]) -> @cmd.Cmd
+pub fn[T : ToJson] RequestWithBody::with_json(Self, T) -> Request
+pub fn RequestWithBody::with_text(Self, String) -> Request
 
 // Type aliases
 

@@ -1050,7 +1050,7 @@ fn main {
   @rabbita.new(app)
   ..with_init(
     batch([
-      @http.get(site_base_url() + "doc/menu.json").expect(x => {
+      @http.get(site_base_url() + "doc/menu.json").expect_json(x => {
         dispatch(MenuFetched(x))
       }),
       @shiki.load(
