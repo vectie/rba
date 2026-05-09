@@ -5,6 +5,7 @@ let currentKey = ''
 let currentLang = ''
 let currentOnChange = () => {}
 let suppressChange = false
+let syncVersion = 0
 
 const moonbitKeywords = new Set([
   'async',
@@ -233,10 +234,13 @@ export function selectEditorRange({ key, line, column, endLine, endColumn }) {
 }
 
 export async function syncEditor({ hostId, key, value, lang, onChange }) {
+  const version = ++syncVersion
   const host = document.getElementById(hostId)
-  if (!host) return
+  if (!host) return false
 
   const cm = await loadModules()
+  if (version !== syncVersion) return false
+
   currentOnChange = onChange
 
   if (!view || currentKey !== key || view.dom.parentElement !== host) {
@@ -270,7 +274,7 @@ export async function syncEditor({ hostId, key, value, lang, onChange }) {
     })
     currentKey = key
     currentLang = lang
-    return
+    return true
   }
 
   if (currentLang !== lang) {
@@ -280,4 +284,5 @@ export async function syncEditor({ hostId, key, value, lang, onChange }) {
     currentLang = lang
   }
   updateDoc(value)
+  return true
 }

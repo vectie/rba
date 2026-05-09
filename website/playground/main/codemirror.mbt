@@ -7,7 +7,7 @@ extern "js" fn sync_editor_js(
   on_change : (String) -> Unit,
 ) -> Unit =
   #| (hostId, key, value, lang, onChange) => {
-  #|   import('./support/editor.js?v=cm-12')
+  #|   import('./support/editor.js?v=cm-24')
   #|     .then(({ syncEditor }) =>
   #|       syncEditor({ hostId, key, value, lang, onChange })
   #|     )
@@ -44,10 +44,11 @@ extern "js" fn focus_editor_range_js(
   end_column : Int,
 ) -> Unit =
   #| (hostId, key, value, lang, onChange, line, column, endLine, endColumn) => {
-  #|   import('./support/editor.js?v=cm-12')
+  #|   import('./support/editor.js?v=cm-24')
   #|     .then(async ({ syncEditor, selectEditorRange }) => {
-  #|       await syncEditor({ hostId, key, value, lang, onChange })
-  #|       selectEditorRange({ key, line, column, endLine, endColumn })
+  #|       if (await syncEditor({ hostId, key, value, lang, onChange })) {
+  #|         selectEditorRange({ key, line, column, endLine, endColumn })
+  #|       }
   #|     })
   #|     .catch(error => {
   #|       console.error('[playground editor] failed to focus diagnostic', error)
