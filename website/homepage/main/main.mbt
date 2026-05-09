@@ -594,12 +594,10 @@ fn view_nav(emit : Emit[Msg], model : Model) -> Html {
       div(class="nav-links", [
         a(href=site_base_url(), class=home_cls, "Home"),
         a(href=tour_base_url(), class=tour_cls, "Tour"),
-        a(
-          href=playground_url(),
-          class="nav-link nav-link--ext",
-          escape=true,
-          [text("Playground"), icon_ext_link()],
-        ),
+        a(href=playground_url(), class="nav-link nav-link--ext", escape=true, [
+          text("Playground"),
+          icon_ext_link(),
+        ]),
         a(href=docs_url, target=Blank, class="nav-link nav-link--ext", [
           text("Docs"),
           icon_ext_link(),
@@ -843,10 +841,14 @@ fn view_showcase() -> Html {
       ),
       div(class="showcase-grid", [
         showcase_card(
-          github_url, "rabbita.jpeg", "rabbita.dev", "The official Rabbita framework site — this page.",
+          "https://moonbit-community.github.io/rabbita/", "rabbita.jpeg", "rabbita",
+          "The official Rabbita framework site — this page.",
         ),
         showcase_card(
           "https://mooncakes.io", "mooncakesio.jpeg", "mooncakes.io", "The MoonBit package registry and documentation hub.",
+        ),
+        showcase_card(
+          "https://www.bingque.com/", "bingque.jpeg", "Bingque", "Learn AI concepts faster with guided practice and long-term skill building.",
         ),
         a(
           class="showcase-card showcase-card--submit",
@@ -1026,16 +1028,7 @@ fn view(emit : Emit[Msg], model : Model) -> Html {
       ])
     Tour(tm) => view_tour(emit, model, tm)
   }
-  div(class=site_class, [
-    div(class="wip-banner", [
-      text(
-        "🚧  This website is a work in progress. Content may be incomplete or inaccurate.",
-      ),
-    ]),
-    view_nav(emit, model),
-    body,
-    view_footer(),
-  ])
+  div(class=site_class, [view_nav(emit, model), body, view_footer()])
 }
 
 ///|

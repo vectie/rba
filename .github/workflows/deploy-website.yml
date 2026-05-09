@@ -61,6 +61,8 @@ jobs:
         run: |
           moon check --target js
           npm run build
+        env:
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}
 
       - name: Update playground dependencies
         working-directory: website/playground

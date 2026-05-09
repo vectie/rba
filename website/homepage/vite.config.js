@@ -8,19 +8,22 @@ function skipBuildCache(source) {
   return !parts.includes('_build') && !parts.includes('.mooncakes')
 }
 
+function siteBase() {
+  const value = process.env.VITE_BASE || '/'
+  if (value === '/') return '/'
+  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
+}
+
 export default defineConfig({
-  base: './',
-  publicDir: false,
+  base: siteBase(),
+  publicDir: 'public',
   plugins: [
     rabbita(),
     {
       name: 'copy-static-assets',
       closeBundle() {
-        const publicDir = join(process.cwd(), 'public')
         const distDir = join(process.cwd(), 'dist')
-        cpSync(join(publicDir, '404.html'), join(distDir, '404.html'))
-        cpSync(join(publicDir, 'mooncakesio.jpeg'), join(distDir, 'mooncakesio.jpeg'))
-        cpSync(join(publicDir, 'rabbita.jpeg'), join(distDir, 'rabbita.jpeg'))
         cpSync(
           join(process.cwd(), '../../doc'),
           join(distDir, 'doc'),
