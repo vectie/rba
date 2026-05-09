@@ -28,10 +28,11 @@ enum Msg {
   HtmlChanged(String)
   CssChanged(String)
   MoonPkgChanged(String)
+  ShareRequested
+  ShareReady(Result[@js.Value, Error])
   RunRequested
   Run(Int)
   CompileReady(Int, Result[@js.Value, Error])
-  Reset
 }
 
 ///|
@@ -157,23 +158,61 @@ let examples : Array[Example] = [
 
 ///|
 fn initial_model() -> Model {
+  let example = example_by_id(read_source("example", "counter"))
+  let example_id = example.id
+  let shared_source = has_shared_source()
+  let example_from_url = has_example_param()
+  let use_example_defaults = example_from_url &&
+    !shared_source &&
+    !example.load_from_repo
+  let load_repo_example = example_from_url &&
+    !shared_source &&
+    example.load_from_repo
   {
     active_tab: Mbt,
-    mbt: read_source("mbt", default_mbt),
-    html: initial_html(),
-    css: read_source("css", default_css),
-    moon_pkg: read_source("moon_pkg", default_moon_pkg),
+    mbt: if use_example_defaults {
+      example.mbt
+    } else {
+      read_source("mbt", default_mbt)
+    },
+    html: if use_example_defaults {
+      example.html
+    } else {
+      initial_html()
+    },
+    css: if use_example_defaults {
+      example.css
+    } else {
+      read_source("css", default_css)
+    },
+    moon_pkg: if use_example_defaults {
+      example.moon_pkg
+    } else {
+      read_source("moon_pkg", default_moon_pkg)
+    },
     compiled_js: None,
     asset_status: "Loading compiler assets",
     asset_packages: [],
     package_menu_open: false,
-    status: "Idle",
+    status: if load_repo_example {
+      "Loading example"
+    } else {
+      "Idle"
+    },
     log: "",
     diagnostics: [],
     compiling: false,
-    run_id: 0,
-    example_id: read_source("example", "counter"),
-    example_load: None,
+    run_id: if load_repo_example {
+      1
+    } else {
+      0
+    },
+    example_id,
+    example_load: if load_repo_example {
+      Some(new_example_load(1, example))
+    } else {
+      None
+    },
   }
 }
 
@@ -227,15 +266,8 @@ fn persist_cmd(model : Model) -> Cmd {
 }
 
 ///|
-fn clear_storage_cmd() -> Cmd {
-  @rabbita.attempt(_ => @rabbita.none, async fn() {
-    clear_source_promise().wait()
-  })
-}
-
-///|
 fn render_cmd(html : String, css : String, js : String) -> Cmd {
-  @rabbita.effect(async fn() noraise { render_preview(html, css, js) })
+  @rabbita.effect(fn() noraise { render_preview(html, css, js) })
 }
 
 ///|
@@ -419,7 +451,13 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
           run_id: token,
           example_load: Some(new_example_load(token, example)),
         }
-        (load_example_cmd(dispatch, token, example), next)
+        (
+          @rabbita.batch([
+            @rabbita.effect(fn() noraise { set_example_url(example.id) }),
+            load_example_cmd(dispatch, token, example),
+          ]),
+          next,
+        )
       } else {
         let next = {
           ..model,
@@ -439,8 +477,9 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         (
           @rabbita.batch([
             persist_cmd(next),
-            dispatch(Run(token)),
+            @rabbita.effect(fn() noraise { set_example_url(example.id) }),
             editor_sync_cmd(dispatch, next),
+            dispatch(Run(token)),
           ]),
           next,
         )
@@ -473,8 +512,8 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
                     (
                       @rabbita.batch([
                         persist_cmd(next),
-                        dispatch(Run(token)),
                         editor_sync_cmd(dispatch, next),
+                        dispatch(Run(token)),
                       ]),
                       next,
                     )
@@ -504,16 +543,29 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
           if js_result_ok(value) {
             let count = js_result_int(value, "count")
             let packages = split_lines(js_result_string(value, "packages"))
-            let token = model.run_id + 1
-            let next = {
-              ..model,
-              asset_status: "\{count} packages available",
-              asset_packages: packages,
-              status: "Pending",
-              diagnostics: [],
-              run_id: token,
+            match model.example_load {
+              Some(_) =>
+                (
+                  @rabbita.none,
+                  {
+                    ..model,
+                    asset_status: "\{count} packages available",
+                    asset_packages: packages,
+                  },
+                )
+              None => {
+                let token = model.run_id + 1
+                let next = {
+                  ..model,
+                  asset_status: "\{count} packages available",
+                  asset_packages: packages,
+                  status: "Pending",
+                  diagnostics: [],
+                  run_id: token,
+                }
+                (dispatch(Run(token)), next)
+              }
             }
-            (dispatch(Run(token)), next)
           } else {
             let message = js_result_string(value, "error")
             (
@@ -634,6 +686,40 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         next,
       )
     }
+    ShareRequested =>
+      (
+        @rabbita.attempt(result => dispatch(ShareReady(result)), async fn() {
+          share_source_promise(
+            model.example_id,
+            model.mbt,
+            model.html,
+            model.css,
+            model.moon_pkg,
+          ).wait()
+        }),
+        model,
+      )
+    ShareReady(result) =>
+      match result {
+        Ok(value) =>
+          if js_result_ok(value) {
+            (
+              @rabbita.none,
+              { ..model, status: js_result_string(value, "status") },
+            )
+          } else {
+            (
+              @rabbita.none,
+              {
+                ..model,
+                status: "Share failed",
+                log: js_result_string(value, "error"),
+              },
+            )
+          }
+        Err(error) =>
+          (@rabbita.none, { ..model, status: "Share failed", log: "\{error}" })
+      }
     RunRequested => {
       let token = model.run_id + 1
       let next = {
@@ -659,57 +745,6 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         }
         (compile_cmd(dispatch, token, model.mbt, model.moon_pkg), next)
       }
-    Reset => {
-      let token = model.run_id + 1
-      let example = example_by_id(model.example_id)
-      if example.load_from_repo {
-        let next = {
-          ..model,
-          compiled_js: model.compiled_js,
-          status: "Loading example",
-          log: "",
-          diagnostics: [],
-          compiling: false,
-          run_id: token,
-          example_load: Some(new_example_load(token, example)),
-        }
-        (
-          @rabbita.batch([
-            clear_storage_cmd(),
-            load_example_cmd(dispatch, token, example),
-          ]),
-          next,
-        )
-      } else {
-        let next = {
-          active_tab: model.active_tab,
-          mbt: example.mbt,
-          html: example.html,
-          css: example.css,
-          moon_pkg: example.moon_pkg,
-          compiled_js: model.compiled_js,
-          asset_status: model.asset_status,
-          asset_packages: model.asset_packages,
-          package_menu_open: false,
-          status: "Pending",
-          log: "",
-          diagnostics: [],
-          compiling: false,
-          run_id: token,
-          example_id: example.id,
-          example_load: None,
-        }
-        (
-          @rabbita.batch([
-            clear_storage_cmd(),
-            preview_refresh_cmd(next),
-            dispatch(Run(token)),
-            editor_sync_cmd(dispatch, next),
-          ]),
-          next,
-        )
-      }
-    }
   }
 }
 
@@ -1006,9 +1041,9 @@ fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
         div(class="bar-group", [
           button(
             class="plain-button",
-            id="reset-button",
-            on_click=dispatch(Reset),
-            "Reset",
+            id="share-button",
+            on_click=dispatch(ShareRequested),
+            "Share",
           ),
           button(
             id="rebuild-button",
@@ -1032,12 +1067,21 @@ fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
 }
 
 ///|
+fn initial_cmd(dispatch : Dispatch[Msg], model : Model) -> Cmd {
+  let cmds = [load_assets_cmd(dispatch), editor_sync_cmd(dispatch, model)]
+  match model.example_load {
+    Some(load) => {
+      let example = example_by_id(load.example_id)
+      cmds.push(load_example_cmd(dispatch, load.token, example))
+    }
+    None => ()
+  }
+  @rabbita.batch(cmds)
+}
+
+///|
 fn main {
   let model = initial_model()
   let (dispatch, app) = @rabbita.cell_with_dispatch(model~, update~, view~)
-  @rabbita.new(app)
-  ..with_init(
-    @rabbita.batch([load_assets_cmd(dispatch), editor_sync_cmd(dispatch, model)]),
-  )
-  .mount("app")
+  @rabbita.new(app)..with_init(initial_cmd(dispatch, model)).mount("app")
 }

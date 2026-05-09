@@ -156,14 +156,19 @@ extern "js" fn render_preview(html : String, css : String, js : String) -> Unit 
 
 ///|
 extern "js" fn read_source(field : String, fallback : String) -> String =
-  #| (field, fallback) => {
-  #|   try {
-  #|     const parsed = JSON.parse(localStorage.getItem('rabbita-pure-mbt-playground') || '{}')
-  #|     return typeof parsed[field] === 'string' ? parsed[field] : fallback
-  #|   } catch {
-  #|     return fallback
-  #|   }
-  #| }
+  #| (field, fallback) => globalThis.RabbitaPlaygroundShare.readSource(field, fallback)
+
+///|
+extern "js" fn has_shared_source() -> Bool =
+  #| () => globalThis.RabbitaPlaygroundShare.hasSharedSource()
+
+///|
+extern "js" fn has_example_param() -> Bool =
+  #| () => globalThis.RabbitaPlaygroundShare.hasExampleParam()
+
+///|
+extern "js" fn set_example_url(example : String) -> Unit =
+  #| (example) => globalThis.RabbitaPlaygroundShare.setExampleUrl(example)
 
 ///|
 extern "js" fn save_source_promise(
@@ -173,20 +178,16 @@ extern "js" fn save_source_promise(
   css : String,
   moon_pkg : String,
 ) -> @js.Promise =
-  #| (example, mbt, html, css, moonPkg) => {
-  #|   localStorage.setItem('rabbita-pure-mbt-playground', JSON.stringify({
-  #|     example,
-  #|     mbt,
-  #|     html,
-  #|     css,
-  #|     moon_pkg: moonPkg,
-  #|   }))
-  #|   return Promise.resolve(null)
-  #| }
+  #| (example, mbt, html, css, moonPkg) =>
+  #|   globalThis.RabbitaPlaygroundShare.saveSource(example, mbt, html, css, moonPkg)
 
 ///|
-extern "js" fn clear_source_promise() -> @js.Promise =
-  #| () => {
-  #|   localStorage.removeItem('rabbita-pure-mbt-playground')
-  #|   return Promise.resolve(null)
-  #| }
+extern "js" fn share_source_promise(
+  example : String,
+  mbt : String,
+  html : String,
+  css : String,
+  moon_pkg : String,
+) -> @js.Promise =
+  #| (example, mbt, html, css, moonPkg) =>
+  #|   globalThis.RabbitaPlaygroundShare.shareSource(example, mbt, html, css, moonPkg)

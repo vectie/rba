@@ -85,6 +85,7 @@ async fn copy_static_site_files() -> Unit raise {
   copy_file("support/compiler.js", "dist/support/compiler.js")
   copy_file("support/editor.js", "dist/support/editor.js")
   copy_file("support/rpc.js", "dist/support/rpc.js")
+  copy_file("support/share.js", "dist/support/share.js")
 }
 
 ///|
