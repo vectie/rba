@@ -1,5 +1,5 @@
 {
-  "name": "example/sokobank",
+  "name": "example/sokoban",
   "version": "0.2.0",
   "deps": {
     "moonbit-community/rabbita": {

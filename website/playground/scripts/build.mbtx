@@ -65,9 +65,9 @@ async fn copy_repo_examples() -> Unit raise {
   if @fs.exists("dist/repo-examples") {
     @fs.rmdir("dist/repo-examples", recursive=true)
   }
-  copy_repo_example_asset("sokobank", "main/main.mbt")
-  copy_repo_example_asset("sokobank", "main/moon.pkg")
-  copy_repo_example_asset("sokobank", "public/styles.css")
+  copy_repo_example_asset("sokoban", "main/main.mbt")
+  copy_repo_example_asset("sokoban", "main/moon.pkg")
+  copy_repo_example_asset("sokoban", "public/styles.css")
   copy_repo_example_asset("animation", "main/client.mbt")
   copy_repo_example_asset("animation", "main/logo_animation.mbt")
   copy_repo_example_asset("animation", "main/animation_tab.mbt")

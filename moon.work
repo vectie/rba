@@ -2,7 +2,7 @@ members = [
   "./doc",
   "./examples/shiki_editor",
   "./examples/animation",
-  "./examples/sokobank",
+  "./examples/sokoban",
   "./examples/SSR",
   "./examples/subscriptions",
   "./examples/websocket",
