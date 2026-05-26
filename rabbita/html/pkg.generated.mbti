@@ -545,7 +545,7 @@ pub using @common {type Scroll}
 
 // Traits
 pub trait IsChildren {
-  to_children(Self) -> @runtime.Children[@runtime.VNode]
+  fn to_children(Self) -> @runtime.Children[@runtime.VNode]
 }
 pub impl IsChildren for String
 pub impl IsChildren for @runtime.Children[@runtime.VNode]
