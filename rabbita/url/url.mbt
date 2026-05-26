@@ -8,7 +8,7 @@ pub(all) enum UrlRequest {
 } derive(Debug, Eq, Compare)
 
 ///|
-pub impl Show for UrlRequest with output(self, buf) {
+pub impl Show for UrlRequest with fn output(self, buf) {
   self.to_repr().output(buf)
 }
 
@@ -33,7 +33,7 @@ pub(all) struct Url {
 } derive(Debug, Eq, Compare)
 
 ///|
-pub impl Show for Url with output(self, buf) {
+pub impl Show for Url with fn output(self, buf) {
   self.to_repr().output(buf)
 }
 
@@ -45,7 +45,7 @@ pub(all) enum Protocol {
 } derive(Debug, Eq, Compare)
 
 ///|
-pub impl Show for Protocol with output(self, buf) {
+pub impl Show for Protocol with fn output(self, buf) {
   self.to_repr().output(buf)
 }
 

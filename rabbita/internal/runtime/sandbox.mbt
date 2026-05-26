@@ -166,7 +166,7 @@ pub fn Sandbox::flush(self : Self) -> Unit {
 
 ///|
 #cfg(target="js")
-pub impl Scheduler for Sandbox with run_effect(self, kind, f) {
+pub impl Scheduler for Sandbox with fn run_effect(self, kind, f) {
   match kind {
     Immediately => f(self)
     AfterRender => self.after_render_queue.push(f)
@@ -175,7 +175,7 @@ pub impl Scheduler for Sandbox with run_effect(self, kind, f) {
 
 ///|
 #cfg(target="js")
-pub impl Scheduler for Sandbox with queue_message(self, id, send_message) {
+pub impl Scheduler for Sandbox with fn queue_message(self, id, send_message) {
   send_message()
   self.msg_queue.push(id)
 }
@@ -183,7 +183,7 @@ pub impl Scheduler for Sandbox with queue_message(self, id, send_message) {
 ///|
 /// Processing all pending messages FIFO to update all relevant models
 #cfg(target="js")
-pub impl Scheduler for Sandbox with drain_message(self) {
+pub impl Scheduler for Sandbox with fn drain_message(self) {
   if !self.drain_scheduled {
     self.drain_scheduled = true
     while self.msg_queue.pop() is Some(id) {
@@ -199,6 +199,6 @@ pub impl Scheduler for Sandbox with drain_message(self) {
 
 ///|
 #cfg(target="js")
-pub impl Scheduler for Sandbox with hooks(self) {
+pub impl Scheduler for Sandbox with fn hooks(self) {
   self.hooks
 }

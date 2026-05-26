@@ -22,8 +22,7 @@ fn inject_build_entry_script(html : String) -> String {
     Some(index) => html[:index].to_owned() + patch + html[index:].to_owned()
     None =>
       match html.rev_find("</body>") {
-        Some(index) =>
-          html[:index].to_owned() + patch + html[index:].to_owned()
+        Some(index) => html[:index].to_owned() + patch + html[index:].to_owned()
         None =>
           match html.rev_find("</html>") {
             Some(index) =>

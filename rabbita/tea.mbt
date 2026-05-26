@@ -23,7 +23,7 @@ pub type Emit[Msg] = @cmd.Emit[Msg]
 pub type Dispatch[Msg] = Emit[Msg]
 
 ///|
-impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with init(
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with fn init(
   self,
   scheduler,
 ) {
@@ -67,7 +67,7 @@ fn diff_subs(
 }
 
 ///|
-impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with step(
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with fn step(
   self,
   scheduler,
 ) {
@@ -90,12 +90,12 @@ impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with step(
 }
 
 ///|
-impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with view(self) {
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with fn view(self) {
   (self.view)(self.emit, self.model.val).0
 }
 
 ///|
-impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with flags(self) {
+impl[Model, Msg] @runtime.IsCell for TypedCell[Model, Msg] with fn flags(self) {
   self.flags
 }
 
@@ -350,11 +350,12 @@ pub fn[Model, Msg] cell_with_dispatch(
 ///   let app = @rabbita.simple_cell(
 ///     model=0,
 ///     update=(_ : Unit, count) => count + 1,
-///     view=(emit, count) =>
+///     view=(emit, count) => {
 ///       @html.div([
 ///         @html.h1("You clicked \{count} times."),
 ///         @html.button(on_click=emit(()), "+"),
-///       ]),
+///       ])
+///     },
 ///   )
 ///   ignore(app)
 /// }
