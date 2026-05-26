@@ -2,7 +2,7 @@
 using @html {a, button, div, iframe, li, nothing, option, pre, select, span, ul}
 
 ///|
-using @rabbita {type Cmd, type Dispatch, type Html}
+using @rabbita {type Cmd, type Emit, type Html}
 
 ///|
 struct Diagnostic {
@@ -271,8 +271,8 @@ fn render_cmd(html : String, css : String, js : String) -> Cmd {
 }
 
 ///|
-fn load_assets_cmd(dispatch : Dispatch[Msg]) -> Cmd {
-  @rabbita.attempt(result => dispatch(AssetsReady(result)), async fn() {
+fn load_assets_cmd(emit : Emit[Msg]) -> Cmd {
+  @rabbita.attempt(result => emit(AssetsReady(result)), async fn() {
     load_assets_promise().wait()
   })
 }
@@ -346,7 +346,7 @@ fn loaded_example_from_load(load : ExampleLoad) -> LoadedExample? {
 
 ///|
 fn load_example_cmd(
-  dispatch : Dispatch[Msg],
+  emit : Emit[Msg],
   token : Int,
   example : Example,
 ) -> Cmd {
@@ -354,18 +354,18 @@ fn load_example_cmd(
   for index, path in example.repo_sources {
     cmds.push(
       @http.get(path).expect_text(result => {
-        dispatch(ExampleFileLoaded(token, RepoSource(index), result))
+        emit(ExampleFileLoaded(token, RepoSource(index), result))
       }),
     )
   }
   cmds.push(
     @http.get(example.repo_css).expect_text(result => {
-      dispatch(ExampleFileLoaded(token, RepoCss, result))
+      emit(ExampleFileLoaded(token, RepoCss, result))
     }),
   )
   cmds.push(
     @http.get(example.repo_moon_pkg).expect_text(result => {
-      dispatch(ExampleFileLoaded(token, RepoMoonPkg, result))
+      emit(ExampleFileLoaded(token, RepoMoonPkg, result))
     }),
   )
   @rabbita.batch(cmds)
@@ -373,12 +373,12 @@ fn load_example_cmd(
 
 ///|
 fn compile_cmd(
-  dispatch : Dispatch[Msg],
+  emit : Emit[Msg],
   token : Int,
   source : String,
   moon_pkg : String,
 ) -> Cmd {
-  @rabbita.attempt(result => dispatch(CompileReady(token, result)), async fn() {
+  @rabbita.attempt(result => emit(CompileReady(token, result)), async fn() {
     compile_mbt_promise(source, moon_pkg).wait()
   })
 }
@@ -392,20 +392,20 @@ fn preview_refresh_cmd(model : Model) -> Cmd {
 }
 
 ///|
-fn editor_sync_cmd(dispatch : Dispatch[Msg], model : Model) -> Cmd {
+fn editor_sync_cmd(emit : Emit[Msg], model : Model) -> Cmd {
   let active = model.active_tab
   sync_code_editor(
     "code-editor-host",
     tab_id(active),
     tab_value(model),
     tab_lang(active),
-    tab_input(dispatch, active),
+    tab_input(emit, active),
   )
 }
 
 ///|
 fn editor_focus_diagnostic_cmd(
-  dispatch : Dispatch[Msg],
+  emit : Emit[Msg],
   model : Model,
   diagnostic : Diagnostic,
 ) -> Cmd {
@@ -414,7 +414,7 @@ fn editor_focus_diagnostic_cmd(
     tab_id(Mbt),
     model.mbt,
     tab_lang(Mbt),
-    tab_input(dispatch, Mbt),
+    tab_input(emit, Mbt),
     diagnostic.line,
     diagnostic.column,
     diagnostic.end_line,
@@ -423,15 +423,15 @@ fn editor_focus_diagnostic_cmd(
 }
 
 ///|
-fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
+fn update(emit : Emit[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
   match msg {
     SelectTab(tab) => {
       let next = { ..model, active_tab: tab }
-      (editor_sync_cmd(dispatch, next), next)
+      (editor_sync_cmd(emit, next), next)
     }
     FocusDiagnostic(diagnostic) => {
       let next = { ..model, active_tab: Mbt }
-      (editor_focus_diagnostic_cmd(dispatch, next, diagnostic), next)
+      (editor_focus_diagnostic_cmd(emit, next, diagnostic), next)
     }
     TogglePackageMenu =>
       (@rabbita.none, { ..model, package_menu_open: !model.package_menu_open })
@@ -454,7 +454,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         (
           @rabbita.batch([
             @rabbita.effect(fn() noraise { set_example_url(example.id) }),
-            load_example_cmd(dispatch, token, example),
+            load_example_cmd(emit, token, example),
           ]),
           next,
         )
@@ -478,8 +478,8 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
           @rabbita.batch([
             persist_cmd(next),
             @rabbita.effect(fn() noraise { set_example_url(example.id) }),
-            editor_sync_cmd(dispatch, next),
-            dispatch(Run(token)),
+            editor_sync_cmd(emit, next),
+            emit(Run(token)),
           ]),
           next,
         )
@@ -512,8 +512,8 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
                     (
                       @rabbita.batch([
                         persist_cmd(next),
-                        editor_sync_cmd(dispatch, next),
-                        dispatch(Run(token)),
+                        editor_sync_cmd(emit, next),
+                        emit(Run(token)),
                       ]),
                       next,
                     )
@@ -563,7 +563,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
                   diagnostics: [],
                   run_id: token,
                 }
-                (dispatch(Run(token)), next)
+                (emit(Run(token)), next)
               }
             }
           } else {
@@ -653,7 +653,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
       (
         @rabbita.batch([
           persist_cmd(next),
-          @rabbita.delay(dispatch(Run(token)), 650),
+          @rabbita.delay(emit(Run(token)), 650),
         ]),
         next,
       )
@@ -681,14 +681,14 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
       (
         @rabbita.batch([
           persist_cmd(next),
-          @rabbita.delay(dispatch(Run(token)), 650),
+          @rabbita.delay(emit(Run(token)), 650),
         ]),
         next,
       )
     }
     ShareRequested =>
       (
-        @rabbita.attempt(result => dispatch(ShareReady(result)), async fn() {
+        @rabbita.attempt(result => emit(ShareReady(result)), async fn() {
           share_source_promise(
             model.example_id,
             model.mbt,
@@ -730,7 +730,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
         run_id: token,
         example_load: None,
       }
-      (dispatch(Run(token)), next)
+      (emit(Run(token)), next)
     }
     Run(token) =>
       if token != model.run_id {
@@ -743,7 +743,7 @@ fn update(dispatch : Dispatch[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
           log: "",
           diagnostics: [],
         }
-        (compile_cmd(dispatch, token, model.mbt, model.moon_pkg), next)
+        (compile_cmd(emit, token, model.mbt, model.moon_pkg), next)
       }
   }
 }
@@ -800,12 +800,12 @@ fn example_by_id(id : String) -> Example {
 }
 
 ///|
-fn tab_input(dispatch : Dispatch[Msg], tab : SourceTab) -> (String) -> Cmd {
+fn tab_input(emit : Emit[Msg], tab : SourceTab) -> (String) -> Cmd {
   match tab {
-    Mbt => s => dispatch(MbtChanged(s))
-    Html => s => dispatch(HtmlChanged(s))
-    Css => s => dispatch(CssChanged(s))
-    MoonPkg => s => dispatch(MoonPkgChanged(s))
+    Mbt => s => emit(MbtChanged(s))
+    Html => s => emit(HtmlChanged(s))
+    Css => s => emit(CssChanged(s))
+    MoonPkg => s => emit(MoonPkgChanged(s))
   }
 }
 
@@ -875,21 +875,21 @@ fn rebuild_button_text(model : Model) -> String {
 
 ///|
 fn tab_button(
-  dispatch : Dispatch[Msg],
+  emit : Emit[Msg],
   active : SourceTab,
   tab : SourceTab,
 ) -> Html {
   let selected = active == tab
   let class_name = if selected { "tab-button selected" } else { "tab-button" }
-  button(class=class_name, on_click=dispatch(SelectTab(tab)), tab_title(tab))
+  button(class=class_name, on_click=emit(SelectTab(tab)), tab_title(tab))
 }
 
 ///|
-fn example_select(dispatch : Dispatch[Msg], model : Model) -> Html {
+fn example_select(emit : Emit[Msg], model : Model) -> Html {
   select(
     id="example-select",
     class="example-select",
-    on_change=value => dispatch(ExampleChanged(value)),
+    on_change=value => emit(ExampleChanged(value)),
     examples.map(example => {
       option(
         value=example.id,
@@ -906,7 +906,7 @@ fn package_docs_url(pkg : String) -> String {
 }
 
 ///|
-fn package_menu(dispatch : Dispatch[Msg], model : Model) -> Html {
+fn package_menu(emit : Emit[Msg], model : Model) -> Html {
   if model.asset_packages.is_empty() {
     span(class="asset-status", model.asset_status)
   } else {
@@ -920,9 +920,9 @@ fn package_menu(dispatch : Dispatch[Msg], model : Model) -> Html {
         type_="button",
         class="package-trigger",
         attrs=@html.Attrs::build().on_blur(_ => {
-          @rabbita.delay(dispatch(ClosePackageMenu), 120)
+          @rabbita.delay(emit(ClosePackageMenu), 120)
         }),
-        on_click=dispatch(TogglePackageMenu),
+        on_click=emit(TogglePackageMenu),
         [
           span(class="package-label", "Packages"),
           span(class="package-count", "\{model.asset_packages.length()}"),
@@ -955,7 +955,7 @@ fn package_menu(dispatch : Dispatch[Msg], model : Model) -> Html {
 }
 
 ///|
-fn code_panel(_dispatch : Dispatch[Msg], _model : Model) -> Html {
+fn code_panel(_emit : Emit[Msg], _model : Model) -> Html {
   div(class="code-panel", [
     div(id="code-editor-host", class="code-editor-host", nothing),
   ])
@@ -981,10 +981,10 @@ fn diagnostic_location(diagnostic : Diagnostic) -> String {
 }
 
 ///|
-fn diagnostic_row(dispatch : Dispatch[Msg], diagnostic : Diagnostic) -> Html {
+fn diagnostic_row(emit : Emit[Msg], diagnostic : Diagnostic) -> Html {
   button(
     class="diagnostic-item \{diagnostic.level}",
-    on_click=dispatch(FocusDiagnostic(diagnostic)),
+    on_click=emit(FocusDiagnostic(diagnostic)),
     [
       span(class="diagnostic-location", diagnostic_location(diagnostic)),
       span(class="diagnostic-message", diagnostic.message),
@@ -993,22 +993,22 @@ fn diagnostic_row(dispatch : Dispatch[Msg], diagnostic : Diagnostic) -> Html {
 }
 
 ///|
-fn diagnostics_output(dispatch : Dispatch[Msg], model : Model) -> Html {
+fn diagnostics_output(emit : Emit[Msg], model : Model) -> Html {
   div(
     id="diagnostics-output",
     class="diagnostics-output",
     if model.diagnostics.is_empty() {
       [pre(class="diagnostics-plain", model.log)]
     } else {
-      model.diagnostics.map(diagnostic => diagnostic_row(dispatch, diagnostic))
+      model.diagnostics.map(diagnostic => diagnostic_row(emit, diagnostic))
     },
   )
 }
 
 ///|
-fn result_body(dispatch : Dispatch[Msg], model : Model) -> Html {
+fn result_body(emit : Emit[Msg], model : Model) -> Html {
   if show_diagnostics(model) {
-    diagnostics_output(dispatch, model)
+    diagnostics_output(emit, model)
   } else {
     iframe(
       id="preview-frame",
@@ -1030,49 +1030,49 @@ fn result_overlay(model : Model) -> Html {
 }
 
 ///|
-fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
+fn view(emit : Emit[Msg], model : Model) -> Html {
   div(class="shell", [
     div(class="workbench", [
       div(class="top-bar editor-status", [
         div(class="bar-group", [
-          example_select(dispatch, model),
-          package_menu(dispatch, model),
+          example_select(emit, model),
+          package_menu(emit, model),
         ]),
         div(class="bar-group", [
           button(
             class="plain-button",
             id="share-button",
-            on_click=dispatch(ShareRequested),
+            on_click=emit(ShareRequested),
             "Share",
           ),
           button(
             id="rebuild-button",
             class=rebuild_button_class(model),
             disabled=model.compiling,
-            on_click=dispatch(RunRequested),
+            on_click=emit(RunRequested),
             [rebuild_button_icon(model), span(rebuild_button_text(model))],
           ),
         ]),
       ]),
       div(class="tab-strip", [
-        tab_button(dispatch, model.active_tab, Mbt),
-        tab_button(dispatch, model.active_tab, Html),
-        tab_button(dispatch, model.active_tab, Css),
-        tab_button(dispatch, model.active_tab, MoonPkg),
+        tab_button(emit, model.active_tab, Mbt),
+        tab_button(emit, model.active_tab, Html),
+        tab_button(emit, model.active_tab, Css),
+        tab_button(emit, model.active_tab, MoonPkg),
       ]),
-      code_panel(dispatch, model),
+      code_panel(emit, model),
     ]),
-    div(class="result", [result_body(dispatch, model), result_overlay(model)]),
+    div(class="result", [result_body(emit, model), result_overlay(model)]),
   ])
 }
 
 ///|
-fn initial_cmd(dispatch : Dispatch[Msg], model : Model) -> Cmd {
-  let cmds = [load_assets_cmd(dispatch), editor_sync_cmd(dispatch, model)]
+fn initial_cmd(emit : Emit[Msg], model : Model) -> Cmd {
+  let cmds = [load_assets_cmd(emit), editor_sync_cmd(emit, model)]
   match model.example_load {
     Some(load) => {
       let example = example_by_id(load.example_id)
-      cmds.push(load_example_cmd(dispatch, load.token, example))
+      cmds.push(load_example_cmd(emit, load.token, example))
     }
     None => ()
   }
@@ -1080,8 +1080,9 @@ fn initial_cmd(dispatch : Dispatch[Msg], model : Model) -> Cmd {
 }
 
 ///|
+#warnings("-alert_unstable")
 fn main {
   let model = initial_model()
-  let (dispatch, app) = @rabbita.cell_with_dispatch(model~, update~, view~)
-  @rabbita.new(app)..with_init(initial_cmd(dispatch, model)).mount("app")
+  let (emit, app) = @rabbita.cell_with_emit(model~, update~, view~)
+  @rabbita.new(app)..with_init(initial_cmd(emit, model)).mount("app")
 }

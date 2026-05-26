@@ -4,7 +4,7 @@ let default_mbt : String =
   #|using @html {a, div, h1, h2, li, text, ul}
   #|
   #|///|
-  #|using @rabbita {type Cmd, type Dispatch, type Html}
+  #|using @rabbita {type Cmd, type Emit, type Html}
   #|
   #|///|
   #|enum Msg {
@@ -29,14 +29,14 @@ let default_mbt : String =
   #|}
   #|
   #|///|
-  #|fn view(dispatch : Dispatch[Msg], model : Model) -> Html {
+  #|fn view(emit : Emit[Msg], model : Model) -> Html {
   #|  div(class="app", [
   #|    h1(class="title", "Hello Pure MoonBit"),
   #|    div(class="lead", "The playground shell is written in MoonBit + Rabbita."),
   #|    div(class="actions", [
   #|      button(
   #|        "You clicked \{model.count} times",
-  #|        on_click=dispatch(Clicked),
+  #|        on_click=emit(Clicked),
   #|      ),
   #|    ]),
   #|    div(class="next", [
