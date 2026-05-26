@@ -171,7 +171,7 @@ pub fn[Model, Msg] cell(
   subscriptions? : (Emit[Msg], Model) -> @sub.Sub,
 ) -> Cell {
   let flags = @runtime.Flags::new()
-  let inbox = @queue.Queue::new()
+  let inbox = @queue.Queue([])
   let emit = @cmd.make_emitter(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   Cell({
@@ -251,7 +251,7 @@ pub fn[Model, Msg] cell_with_emit(
   subscriptions? : (Emit[Msg], Model) -> @sub.Sub,
 ) -> (Emit[Msg], Cell) {
   let flags = @runtime.Flags::new()
-  let inbox = @queue.Queue::new()
+  let inbox = @queue.Queue([])
   let emit = @cmd.make_emitter(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   (
@@ -279,7 +279,7 @@ pub fn[Model, Msg] cell_with_dispatch(
   subscriptions? : (Emit[Msg], Model) -> @sub.Sub,
 ) -> (Emit[Msg], Cell) {
   let flags = @runtime.Flags::new()
-  let inbox = @queue.Queue::new()
+  let inbox = @queue.Queue([])
   let emit = @cmd.make_emitter(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   (
@@ -347,27 +347,16 @@ pub fn[Model, Msg] cell_with_dispatch(
 /// 
 /// ```moonbit check
 /// test "counter" {
-///   struct Model {
-///     count : Int
-///   }
-///   enum Msg {
-///     Click
-///   }
 ///   let app = @rabbita.simple_cell(
-///     model={ count: 0 },
-///     update=(msg, model) => {
-///       match msg {
-///         Click => { count: model.count + 1 }
-///       }
-///     },
-///     view=(emit, model) => {
-///       div([
-///         h1("You clicked \{model.count} times."),
-///         button(on_click=emit(Click), "+"),
-///       ])
-///     },
+///     model=0,
+///     update=(_ : Unit, count) => count + 1,
+///     view=(emit, count) =>
+///       @html.div([
+///         @html.h1("You clicked \{count} times."),
+///         @html.button(on_click=emit(()), "+"),
+///       ]),
 ///   )
-///   ignore(app) // use `new(app).mount("id")` in client
+///   ignore(app)
 /// }
 /// ```
 pub fn[Model, Msg] simple_cell(
@@ -386,7 +375,7 @@ pub fn[Model, Msg] simple_cell_with_emit(
   subscriptions? : (Emit[Msg], Model) -> @sub.Sub,
 ) -> (Emit[Msg], Cell) {
   let flags = @runtime.Flags::new()
-  let inbox = @queue.Queue::new()
+  let inbox = @queue.Queue([])
   let emit = @cmd.make_emitter(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   (
@@ -414,7 +403,7 @@ pub fn[Model, Msg] simple_cell_with_dispatch(
   subscriptions? : (Emit[Msg], Model) -> @sub.Sub,
 ) -> (Emit[Msg], Cell) {
   let flags = @runtime.Flags::new()
-  let inbox = @queue.Queue::new()
+  let inbox = @queue.Queue([])
   let emit = @cmd.make_emitter(@key.key, flags.id, inbox)
   let model = @ref.new(model)
   (
