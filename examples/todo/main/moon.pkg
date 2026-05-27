@@ -1,15 +1,13 @@
 import {
   "moonbit-community/rabbita",
-  "moonbit-community/rabbita/cmd",
   "moonbit-community/rabbita/html",
-  "moonbit-community/rabbita/http",
-  "moonbit-community/rabbita/js",
   "moonbit-community/rabbita/svg",
-  "moonbitlang/core/json",
+  "moonbitlang/core/immut/vector",
 }
 
 supported_targets = "js"
 
 options(
   "is-main": true,
+  formatter: { "ignore": [ "main.mbt" ] },
 )

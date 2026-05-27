@@ -18,6 +18,7 @@ struct Diagnostic {
 ///|
 enum Msg {
   AssetsReady(Result[@js.Value, Error])
+  ExamplesReady(Result[ExampleManifest, Error])
   SelectTab(SourceTab)
   FocusDiagnostic(Diagnostic)
   TogglePackageMenu
@@ -58,8 +59,11 @@ struct Model {
   css : String
   moon_pkg : String
   compiled_js : String?
+  assets_ready : Bool
   asset_status : String
   asset_packages : Array[String]
+  examples_ready : Bool
+  examples : Array[Example]
   package_menu_open : Bool
   status : String
   log : String
@@ -74,15 +78,15 @@ struct Model {
 struct Example {
   id : String
   label : String
-  mbt : String
-  html : String
+  sources : Array[String]
   css : String
   moon_pkg : String
-  load_from_repo : Bool
-  repo_sources : Array[String]
-  repo_css : String
-  repo_moon_pkg : String
-}
+} derive(FromJson)
+
+///|
+struct ExampleManifest {
+  examples : Array[Example]
+} derive(FromJson)
 
 ///|
 struct LoadedExample {
@@ -102,125 +106,43 @@ struct ExampleLoad {
 }
 
 ///|
-let examples : Array[Example] = [
-  {
-    id: "counter",
-    label: "Counter",
-    mbt: default_mbt,
-    html: default_html,
-    css: default_css,
-    moon_pkg: default_moon_pkg,
-    load_from_repo: false,
-    repo_sources: [],
-    repo_css: "",
-    repo_moon_pkg: "",
-  },
-  {
-    id: "grocery",
-    label: "Grocery List",
-    mbt: grocery_mbt,
-    html: default_html,
-    css: grocery_css,
-    moon_pkg: default_moon_pkg,
-    load_from_repo: false,
-    repo_sources: [],
-    repo_css: "",
-    repo_moon_pkg: "",
-  },
-  {
-    id: "sokoban",
-    label: "Sokoban",
-    mbt: "",
-    html: default_html,
-    css: "",
-    moon_pkg: "",
-    load_from_repo: true,
-    repo_sources: ["repo-examples/sokoban/main/main.mbt"],
-    repo_css: "repo-examples/sokoban/public/styles.css",
-    repo_moon_pkg: "repo-examples/sokoban/main/moon.pkg",
-  },
-  {
-    id: "animation",
-    label: "Animation",
-    mbt: "",
-    html: default_html,
-    css: "",
-    moon_pkg: "",
-    load_from_repo: true,
-    repo_sources: [
-      "repo-examples/animation/main/client.mbt", "repo-examples/animation/main/logo_animation.mbt",
-      "repo-examples/animation/main/animation_tab.mbt",
-    ],
-    repo_css: "repo-examples/animation/public/styles.css",
-    repo_moon_pkg: "repo-examples/animation/main/moon.pkg",
-  },
-]
-
-///|
 fn initial_model() -> Model {
-  let example = example_by_id(read_source("example", "counter"))
-  let example_id = example.id
-  let shared_source = has_shared_source()
-  let example_from_url = has_example_param()
-  let use_example_defaults = example_from_url &&
-    !shared_source &&
-    !example.load_from_repo
-  let load_repo_example = example_from_url &&
-    !shared_source &&
-    example.load_from_repo
+  let example_id = read_source("example", "counter")
   {
     active_tab: Mbt,
-    mbt: if use_example_defaults {
-      example.mbt
-    } else {
-      read_source("mbt", default_mbt)
-    },
-    html: if use_example_defaults {
-      example.html
-    } else {
-      initial_html()
-    },
-    css: if use_example_defaults {
-      example.css
-    } else {
-      read_source("css", default_css)
-    },
-    moon_pkg: if use_example_defaults {
-      example.moon_pkg
-    } else {
-      read_source("moon_pkg", default_moon_pkg)
-    },
+    mbt: read_source("mbt", ""),
+    html: initial_html(),
+    css: read_source("css", ""),
+    moon_pkg: read_source("moon_pkg", ""),
     compiled_js: None,
+    assets_ready: false,
     asset_status: "Loading compiler assets",
     asset_packages: [],
+    examples_ready: false,
+    examples: [],
     package_menu_open: false,
-    status: if load_repo_example {
-      "Loading example"
-    } else {
-      "Idle"
-    },
+    status: "Loading examples",
     log: "",
     diagnostics: [],
     compiling: false,
-    run_id: if load_repo_example {
-      1
-    } else {
-      0
-    },
+    run_id: 0,
     example_id,
-    example_load: if load_repo_example {
-      Some(new_example_load(1, example))
-    } else {
-      None
-    },
+    example_load: None,
   }
 }
 
 ///|
+fn html_document(title : String) -> String {
+  "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>" +
+  title +
+  "</title>\n  </head>\n  <body>\n    <div id=\"app\"></div>\n  </body>\n</html>"
+}
+
+///|
 fn initial_html() -> String {
-  let html = read_source("html", default_html)
+  let html = read_source("html", "")
   if html.trim().to_owned() == "<div id=\"app\"></div>" {
-    default_html
+    html_document("Playground")
   } else {
     html
   }
@@ -278,10 +200,38 @@ fn load_assets_cmd(emit : Emit[Msg]) -> Cmd {
 }
 
 ///|
-fn basename(path : String) -> String {
-  match path.rev_find("/") {
-    Some(index) => path[index + 1:].to_owned()
-    None => path
+fn example_asset_url(path : String) -> String {
+  "repo-examples/" + path
+}
+
+///|
+fn has_editor_source(model : Model) -> Bool {
+  model.mbt != "" || model.html != "" || model.css != "" || model.moon_pkg != ""
+}
+
+///|
+fn ready_to_compile(model : Model) -> Bool {
+  model.assets_ready &&
+  model.examples_ready &&
+  model.example_load is None &&
+  model.mbt != "" &&
+  model.moon_pkg != ""
+}
+
+///|
+fn run_when_ready(emit : Emit[Msg], model : Model) -> (Cmd, Model) {
+  if ready_to_compile(model) {
+    let token = model.run_id + 1
+    let next = {
+      ..model,
+      status: "Pending",
+      log: "",
+      diagnostics: [],
+      run_id: token,
+    }
+    (emit(Run(token)), next)
+  } else {
+    (@rabbita.none, model)
   }
 }
 
@@ -302,7 +252,7 @@ fn new_example_load(token : Int, example : Example) -> ExampleLoad {
   {
     token,
     example_id: example.id,
-    sources: Array::makei(example.repo_sources.length(), _ => None),
+    sources: Array::makei(example.sources.length(), _ => None),
     css: None,
     moon_pkg: None,
   }
@@ -326,15 +276,17 @@ fn update_example_load(
 }
 
 ///|
-fn loaded_example_from_load(load : ExampleLoad) -> LoadedExample? {
+fn loaded_example_from_load(
+  examples : Array[Example],
+  load : ExampleLoad,
+) -> LoadedExample? {
   guard load.css is Some(css) else { None }
   guard load.moon_pkg is Some(moon_pkg) else { None }
-  let example = example_by_id(load.example_id)
+  guard example_by_id(examples, load.example_id) is Some(example) else { None }
   let parts : Array[String] = []
-  for index, source in load.sources {
-    guard source is Some(source) else { return None }
-    let path = example.repo_sources[index]
-    parts.push("// \{example.label} / \{basename(path)}\n\{source}")
+  for item in load.sources {
+    guard item is Some(source) else { return None }
+    parts.push(source)
   }
   Some({
     mbt: join_blocks(parts),
@@ -342,33 +294,6 @@ fn loaded_example_from_load(load : ExampleLoad) -> LoadedExample? {
     css,
     moon_pkg,
   })
-}
-
-///|
-fn load_example_cmd(
-  emit : Emit[Msg],
-  token : Int,
-  example : Example,
-) -> Cmd {
-  let cmds : Array[Cmd] = []
-  for index, path in example.repo_sources {
-    cmds.push(
-      @http.get(path).expect_text(result => {
-        emit(ExampleFileLoaded(token, RepoSource(index), result))
-      }),
-    )
-  }
-  cmds.push(
-    @http.get(example.repo_css).expect_text(result => {
-      emit(ExampleFileLoaded(token, RepoCss, result))
-    }),
-  )
-  cmds.push(
-    @http.get(example.repo_moon_pkg).expect_text(result => {
-      emit(ExampleFileLoaded(token, RepoMoonPkg, result))
-    }),
-  )
-  @rabbita.batch(cmds)
 }
 
 ///|
@@ -437,52 +362,52 @@ fn update(emit : Emit[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
       (@rabbita.none, { ..model, package_menu_open: !model.package_menu_open })
     ClosePackageMenu => (@rabbita.none, { ..model, package_menu_open: false })
     ExampleChanged(id) => {
-      let example = example_by_id(id)
-      let token = model.run_id + 1
-      if example.load_from_repo {
-        let next = {
-          ..model,
-          example_id: example.id,
-          compiled_js: None,
-          status: "Loading example",
-          log: "",
-          diagnostics: [],
-          compiling: false,
-          run_id: token,
-          example_load: Some(new_example_load(token, example)),
+      match example_by_id(model.examples, id) {
+        Some(example) => {
+          let token = model.run_id + 1
+          let next = {
+            ..model,
+            example_id: example.id,
+            compiled_js: None,
+            status: "Loading example",
+            log: "",
+            diagnostics: [],
+            compiling: false,
+            run_id: token,
+            example_load: Some(new_example_load(token, example)),
+          }
+          (
+            @rabbita.batch([
+              @rabbita.effect(fn() noraise { set_example_url(example.id) }),
+            ] +
+              example.sources.mapi((index, path) => {
+                @http.get(example_asset_url(path)).expect_text(result => {
+                  emit(ExampleFileLoaded(token, RepoSource(index), result))
+                })
+              }) +
+              [
+                @http.get(example_asset_url(example.css)).expect_text(result => {
+                  emit(ExampleFileLoaded(token, RepoCss, result))
+                }),
+                @http.get(example_asset_url(example.moon_pkg)).expect_text(result => {
+                  emit(ExampleFileLoaded(token, RepoMoonPkg, result))
+                }),
+              ]),
+            next,
+          )
         }
-        (
-          @rabbita.batch([
-            @rabbita.effect(fn() noraise { set_example_url(example.id) }),
-            load_example_cmd(emit, token, example),
-          ]),
-          next,
-        )
-      } else {
-        let next = {
-          ..model,
-          example_id: example.id,
-          mbt: example.mbt,
-          html: example.html,
-          css: example.css,
-          moon_pkg: example.moon_pkg,
-          compiled_js: None,
-          status: "Pending",
-          log: "",
-          diagnostics: [],
-          compiling: false,
-          run_id: token,
-          example_load: None,
-        }
-        (
-          @rabbita.batch([
-            persist_cmd(next),
-            @rabbita.effect(fn() noraise { set_example_url(example.id) }),
-            editor_sync_cmd(emit, next),
-            emit(Run(token)),
-          ]),
-          next,
-        )
+        None =>
+          (
+            @rabbita.none,
+            {
+              ..model,
+              status: "Example missing",
+              log: "No playground example named \{id}",
+              diagnostics: [],
+              compiling: false,
+              example_load: None,
+            },
+          )
       }
     }
     ExampleFileLoaded(token, asset, result) =>
@@ -494,7 +419,7 @@ fn update(emit : Emit[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
             match model.example_load {
               Some(load) if load.token == token => {
                 let load = update_example_load(load, asset, body)
-                match loaded_example_from_load(load) {
+                match loaded_example_from_load(model.examples, load) {
                   Some(loaded) => {
                     let next = {
                       ..model,
@@ -513,7 +438,11 @@ fn update(emit : Emit[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
                       @rabbita.batch([
                         persist_cmd(next),
                         editor_sync_cmd(emit, next),
-                        emit(Run(token)),
+                        if next.assets_ready {
+                          emit(Run(token))
+                        } else {
+                          @rabbita.none
+                        },
                       ]),
                       next,
                     )
@@ -537,41 +466,104 @@ fn update(emit : Emit[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
             )
         }
       }
+    ExamplesReady(result) =>
+      match result {
+        Ok(manifest) =>
+          match example_by_id(manifest.examples, model.example_id) {
+            Some(example) => {
+              let should_load_example = !has_shared_source() &&
+                (has_example_param() || !has_editor_source(model))
+              if should_load_example {
+                let token = model.run_id + 1
+                let next = {
+                  ..model,
+                  examples_ready: true,
+                  examples: manifest.examples,
+                  example_id: example.id,
+                  compiled_js: None,
+                  status: "Loading example",
+                  log: "",
+                  diagnostics: [],
+                  compiling: false,
+                  run_id: token,
+                  example_load: Some(new_example_load(token, example)),
+                }
+                (
+                  @rabbita.batch(
+                    example.sources.mapi((index, path) => {
+                      @http.get(example_asset_url(path)).expect_text(result => {
+                        emit(ExampleFileLoaded(token, RepoSource(index), result))
+                      })
+                    }) +
+                    [
+                      @http.get(example_asset_url(example.css)).expect_text(result => {
+                        emit(ExampleFileLoaded(token, RepoCss, result))
+                      }),
+                      @http.get(example_asset_url(example.moon_pkg)).expect_text(result => {
+                        emit(ExampleFileLoaded(token, RepoMoonPkg, result))
+                      }),
+                    ],
+                  ),
+                  next,
+                )
+              } else {
+                let next = {
+                  ..model,
+                  examples_ready: true,
+                  examples: manifest.examples,
+                  example_id: example.id,
+                }
+                run_when_ready(emit, next)
+              }
+            }
+            None =>
+              (
+                @rabbita.none,
+                {
+                  ..model,
+                  examples_ready: true,
+                  examples: manifest.examples,
+                  status: "Example missing",
+                  log: "No playground examples configured",
+                  diagnostics: [],
+                  compiling: false,
+                  example_load: None,
+                },
+              )
+          }
+        Err(error) =>
+          (
+            @rabbita.none,
+            {
+              ..model,
+              status: "Examples missing",
+              log: "\{error}",
+              diagnostics: [],
+              compiling: false,
+              example_load: None,
+            },
+          )
+      }
     AssetsReady(result) =>
       match result {
         Ok(value) =>
           if js_result_ok(value) {
             let count = js_result_int(value, "count")
             let packages = split_lines(js_result_string(value, "packages"))
-            match model.example_load {
-              Some(_) =>
-                (
-                  @rabbita.none,
-                  {
-                    ..model,
-                    asset_status: "\{count} packages available",
-                    asset_packages: packages,
-                  },
-                )
-              None => {
-                let token = model.run_id + 1
-                let next = {
-                  ..model,
-                  asset_status: "\{count} packages available",
-                  asset_packages: packages,
-                  status: "Pending",
-                  diagnostics: [],
-                  run_id: token,
-                }
-                (emit(Run(token)), next)
-              }
+            let next = {
+              ..model,
+              assets_ready: true,
+              asset_status: "\{count} packages available",
+              asset_packages: packages,
             }
+            run_when_ready(emit, next)
           } else {
             let message = js_result_string(value, "error")
             (
               @rabbita.none,
               {
                 ..model,
+                assets_ready: false,
                 asset_status: "Compiler assets missing",
                 asset_packages: [],
                 status: "Assets missing",
@@ -585,6 +577,7 @@ fn update(emit : Emit[Msg], msg : Msg, model : Model) -> (Cmd, Model) {
             @rabbita.none,
             {
               ..model,
+              assets_ready: false,
               asset_status: "Compiler assets missing",
               asset_packages: [],
               status: "Assets missing",
@@ -789,14 +782,17 @@ fn tab_value(model : Model) -> String {
 }
 
 ///|
-fn example_by_id(id : String) -> Example {
-  let mut selected = examples[0]
+fn example_by_id(examples : Array[Example], id : String) -> Example? {
+  let mut selected : Example? = None
   for example in examples {
-    if example.id == id {
-      selected = example
+    if selected is None && example.id == id {
+      selected = Some(example)
     }
   }
-  selected
+  match selected {
+    Some(_) => selected
+    None => if examples.is_empty() { None } else { Some(examples[0]) }
+  }
 }
 
 ///|
@@ -889,14 +885,25 @@ fn example_select(emit : Emit[Msg], model : Model) -> Html {
   select(
     id="example-select",
     class="example-select",
+    disabled=!model.examples_ready,
     on_change=value => emit(ExampleChanged(value)),
-    examples.map(example => {
+    if model.examples.is_empty() {
+      [
+        option(
+          value="",
+          selected=true,
+          if model.examples_ready { "No examples" } else { "Loading examples" },
+        ),
+      ]
+    } else {
+      model.examples.map(example => {
       option(
         value=example.id,
         selected=model.example_id == example.id,
         example.label,
       )
-    }),
+      })
+    },
   )
 }
 
@@ -1068,14 +1075,11 @@ fn view(emit : Emit[Msg], model : Model) -> Html {
 
 ///|
 fn initial_cmd(emit : Emit[Msg], model : Model) -> Cmd {
-  let cmds = [load_assets_cmd(emit), editor_sync_cmd(emit, model)]
-  match model.example_load {
-    Some(load) => {
-      let example = example_by_id(load.example_id)
-      cmds.push(load_example_cmd(emit, load.token, example))
-    }
-    None => ()
-  }
+  let cmds = [
+    load_assets_cmd(emit),
+    @http.get("examples.json").expect_json(result => emit(ExamplesReady(result))),
+    editor_sync_cmd(emit, model),
+  ]
   @rabbita.batch(cmds)
 }
 
