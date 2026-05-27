@@ -10,7 +10,7 @@ type Model
 
 type Msg
 
-type Todo
+type Todo derive(Eq)
 
 // Type aliases
 

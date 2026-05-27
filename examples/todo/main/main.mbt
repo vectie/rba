@@ -23,25 +23,6 @@ enum Msg {
 }
 
 ///|
-fn update(msg : Msg, model : Model) -> Model {
-  let { draft, items } = model
-  match msg {
-    DraftChanged(draft) => { ..model, draft, }
-    Add if draft == "" => model
-    Add => { draft: "", items: items.push({ title: draft, done: false }) }
-    Delete(todo) => { ..model, items: items.filter(x => x != todo) }
-    Toggle(todo) =>
-      {
-        ..model,
-        items: items.map(x => {
-          guard x == todo else { return x }
-          { ..x, done: !x.done }
-        }),
-      }
-  }
-}
-
-///|
 fn view(emit : Emit[Msg], model : Model) -> Html {
   let { draft, items } = model
   let total = items.length()
@@ -58,7 +39,7 @@ fn view(emit : Emit[Msg], model : Model) -> Html {
       ),
       input(input_type=Submit, "add"),
     ],
-    ul() <| [
+    ul <| [
       for x in items => {
         li(class=if x.done { "done" } else { "" }) <| [
           input(
@@ -74,6 +55,25 @@ fn view(emit : Emit[Msg], model : Model) -> Html {
     ],
     span(class="footer", "\{total - completed} active / \{completed} done"),
   ]
+}
+
+///|
+fn update(msg : Msg, model : Model) -> Model {
+  let { draft, items } = model
+  match msg {
+    DraftChanged(draft) => { ..model, draft, }
+    Add if draft == "" => model
+    Add => { draft: "", items: items.push({ title: draft, done: false }) }
+    Delete(todo) => { ..model, items: items.filter(x => x != todo) }
+    Toggle(todo) =>
+      {
+        ..model,
+        items: items.map(x => {
+          guard x == todo else { return x }
+          { ..x, done: !x.done }
+        }),
+      }
+  }
 }
 
 ///|
