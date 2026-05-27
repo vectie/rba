@@ -1,4 +1,4 @@
-using @vector {type Vector}
+using @sorted_map {type SortedMap}
 using @rabbita {simple_cell, new, type Emit, type Html}
 using @html {button, div, h1, input, li, span, ul, nothing, form}
 
@@ -10,46 +10,47 @@ struct Todo {
 
 ///|
 struct Model {
-  draft : String
-  items : Vector[Todo]
+  title : String
+  items : SortedMap[Int, Todo]
+  next : Int
 }
 
 ///|
 enum Msg {
-  DraftChanged(String)
+  TitleChanged(String)
   Add
-  Toggle(Todo)
-  Delete(Todo)
+  Toggle(Int, Todo)
+  Delete(Int)
 }
 
 ///|
 fn view(emit : Emit[Msg], model : Model) -> Html {
-  let { draft, items } = model
+  let { title, items, .. } = model
   let total = items.length()
-  let completed = items.filter(x => x.done).length()
+  let completed = items.filter((_, x) => x.done).length()
 
   div(class="panel") <| [
     h1("Todos"),
     form(on_submit=emit(Add)) <| [
       input(
-        value=draft,
+        value=title,
         placeholder="What needs doing?",
-        on_input=emit.map(s => DraftChanged(s)),
+        on_input=emit.map(s => TitleChanged(s)),
         nothing,
       ),
       input(input_type=Submit, "add"),
     ],
     ul <| [
-      for x in items => {
+      for id, x in items => {
         li(class=if x.done { "done" } else { "" }) <| [
           input(
             input_type=Checkbox,
             checked=x.done,
-            on_change=emit.map(_ => Toggle(x)),
+            on_change=emit.map(_ => Toggle(id, x)),
             nothing,
           ),
           span(x.title),
-          button(on_click=emit(Delete(x)), "delete"),
+          button(on_click=emit(Delete(id)), "delete"),
         ]
       }
     ],
@@ -59,27 +60,26 @@ fn view(emit : Emit[Msg], model : Model) -> Html {
 
 ///|
 fn update(msg : Msg, model : Model) -> Model {
-  let { draft, items } = model
+  let { title, items, next } = model
   match msg {
-    DraftChanged(draft) => { ..model, draft, }
-    Add if draft == "" => model
-    Add => { draft: "", items: items.push({ title: draft, done: false }) }
-    Delete(todo) => { ..model, items: items.filter(x => x != todo) }
-    Toggle(todo) =>
+    TitleChanged(title) => { ..model, title, }
+    Add if title == "" => model
+    Add =>
       {
-        ..model,
-        items: items.map(x => {
-          guard x == todo else { return x }
-          { ..x, done: !x.done }
-        }),
+        title: "",
+        items: items.add(next, { title, done: false }),
+        next: next + 1,
       }
+    Delete(id) => { ..model, items: items.remove(id) }
+    Toggle(id, todo) =>
+      { ..model, items: items.add(id, { ..todo, done: !todo.done }) }
   }
 }
 
 ///|
 fn main {
   let app = simple_cell(
-    model={ draft: "", items: Vector::new() },
+    model={ title: "", items: SortedMap::new(), next: 0 },
     update~,
     view~,
   )
