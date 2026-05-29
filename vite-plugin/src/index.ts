@@ -62,10 +62,32 @@ function findNearestMoonWork(startDir: string): string | undefined {
   }
 }
 
+function parseMoonModName(content: string, filePath: string): string {
+  const match = content.match(/^\s*name\s*=\s*("(?:\\.|[^"\\])*")/m);
+  if (!match) {
+    throw new Error(`Field "name" is missing in ${filePath}`);
+  }
+
+  try {
+    return JSON.parse(match[1]) as string;
+  } catch (err: any) {
+    throw new Error(`Cannot parse field "name" in ${filePath}: ${err.message}`);
+  }
+}
+
 function probeMoonBitProject(moduleRoot: string): MoonProjectConfig {
+  const modFilePath = path.join(moduleRoot, 'moon.mod');
   const modJsonPath = path.join(moduleRoot, 'moon.mod.json');
+  if (fs.existsSync(modFilePath)) {
+    return {
+      moduleRoot,
+      modPath: parseMoonModName(fs.readFileSync(modFilePath, 'utf8'), modFilePath),
+      workspaceRoot: findNearestMoonWork(moduleRoot),
+    };
+  }
+
   if (!fs.existsSync(modJsonPath)) {
-    throw new Error(`Cannot find moon.mod.json in ${moduleRoot}`);
+    throw new Error(`Cannot find moon.mod or moon.mod.json in ${moduleRoot}`);
   }
 
   const json = JSON.parse(fs.readFileSync(modJsonPath, 'utf8')) as { name?: string };
@@ -286,6 +308,7 @@ function shouldRebuildForFile(filePath: string): boolean {
   return filePath.endsWith('.mbt')
     || filePath.endsWith('.mbti')
     || fileName === 'moon.work'
+    || fileName === 'moon.mod'
     || fileName === 'moon.mod.json'
     || fileName === 'moon.pkg'
     || fileName === 'moon.pkg.json';
@@ -300,7 +323,8 @@ function shouldRebuildForFile(filePath: string): boolean {
  *   (for example: `"main"` or `"app/web"`).
  *
  * Selection rule when `main` is not provided:
- * 1. Choose an `is-main` package whose `root` equals `moon.mod.json.name`.
+ * 1. Choose an `is-main` package whose `root` equals the module name from
+ *    `moon.mod` or legacy `moon.mod.json`.
  * 2. Fallback to the first `is-main` package in build metadata.
  *
  * Entry behavior:
@@ -422,6 +446,7 @@ export function rabbita(options: RabbitaOptions = {}): Plugin {
         path.join(currentProject.moduleRoot, '**/*.mbti'),
         path.join(currentProject.moduleRoot, '**/moon.pkg'),
         path.join(currentProject.moduleRoot, '**/moon.pkg.json'),
+        path.join(currentProject.moduleRoot, 'moon.mod'),
         path.join(currentProject.moduleRoot, 'moon.mod.json'),
       ];
       if (currentProject.workspaceRoot) {

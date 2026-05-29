@@ -6,6 +6,7 @@ Vite plugin for Rabbita applications built with MoonBit.
 
 - Modern MoonBit output layout: `_build/js/<debug|release>/build`
 - Main-package discovery via build metadata (`_build/packages.json`), so both `moon.pkg` and legacy `moon.pkg.json` projects work
+- Module discovery via `moon.mod` or legacy `moon.mod.json`
 - Parent workspaces discovered via `moon.work`, with `_build` lookup falling back to the local module
 
 ## Install
@@ -25,7 +26,7 @@ export default defineConfig({
 })
 ```
 
-The current Vite directory must contain `moon.mod.json`.
+The current Vite directory must contain `moon.mod` or legacy `moon.mod.json`.
 
 If a parent `moon.work` exists, the plugin still runs `moon build` in the
 current module directory, then looks for generated artifacts in this order:
