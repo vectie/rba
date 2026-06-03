@@ -420,7 +420,7 @@ export function rabbita(options: RabbitaOptions = {}): Plugin {
       const logger = server.config.logger
       const relpath = path.relative(process.cwd(), file)
       if (!shouldRebuildForFile(file)) {
-        logger.info(`${relpath} changes detected. Skiped.`, {
+        logger.info(`${relpath} changes detected. Skipped.`, {
           clear: true,
           timestamp: true,
         })
