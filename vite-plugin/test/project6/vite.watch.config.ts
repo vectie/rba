@@ -8,6 +8,12 @@ export default defineConfig({
       input: 'app/index.html',
     },
   },
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
+  },
   plugins: [
     rabbita({ mainPkgDir: '.' }),
   ],
