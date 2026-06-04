@@ -167,6 +167,13 @@ fn push_open(value : Bool?, attrs : Attrs) -> Unit {
 }
 
 ///|
+fn push_closedby(value : String?, attrs : Attrs) -> Unit {
+  if value is Some(v) {
+    ignore(attrs.closedby(v))
+  }
+}
+
+///|
 fn push_datetime(value : String?, attrs : Attrs) -> Unit {
   if value is Some(v) {
     ignore(attrs.attribute("datetime", v))
