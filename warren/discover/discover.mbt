@@ -191,13 +191,15 @@ async fn discover_mod(
     let files = @fs.readdir(dir.to_string())
     for file in files {
       let path = dir.join(file)
+      let path_str = path.to_string()
       match file {
         "moon.pkg" =>
           packages.push(
             discover_pkg(dir, mod_root~, mod_name~, mod_artifact_root~),
           )
         "_build" | ".mooncakes" | "node_modules" => ()
-        _ if @fs.kind(path.to_string()) is Directory => queue.push(path)
+        _ if @fs.exists(path_str) && @fs.kind(path_str) is Directory =>
+          queue.push(path)
         _ => ()
       }
     }
