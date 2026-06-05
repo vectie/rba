@@ -238,6 +238,17 @@ pub fn Attrs::class(self : Attrs, value : String) -> Attrs {
 }
 
 ///|
+/// Set the dialog `closedby` attribute.
+///
+/// Browser support is limited. Rabbita only emits the attribute; it does not
+/// polyfill dismissal behavior. Values include `"none"`, `"closerequest"`,
+/// and `"any"`.
+/// [MDN](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement/closedBy)
+pub fn Attrs::closedby(self : Attrs, value : String) -> Attrs {
+  self.attribute("closedby", value)
+}
+
+///|
 /// [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/color)
 pub fn Attrs::color(self : Attrs, value : String) -> Attrs {
   self.attribute("color", value)

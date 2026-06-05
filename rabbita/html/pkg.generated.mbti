@@ -64,7 +64,7 @@ pub fn[C : IsChildren] details(style? : Array[String], id? : String, class? : St
 
 pub fn[C : IsChildren] dfn(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, attrs? : Attrs, C) -> Html
 
-pub fn[C : IsChildren] dialog(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, open? : Bool, on_close? : @cmd.Emit[String], on_cancel? : @cmd.Cmd, attrs? : Attrs, C) -> Html
+pub fn[C : IsChildren] dialog(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, open? : Bool, closedby? : String, on_close? : @cmd.Emit[String], on_cancel? : @cmd.Cmd, attrs? : Attrs, C) -> Html
 
 pub fn[C : IsChildren] div(style? : Array[String], id? : String, class? : String, title? : String, hidden? : Bool, on_click? : @cmd.Cmd, on_mousedown? : @cmd.Emit[@common.Mouse], on_mouseup? : @cmd.Emit[@common.Mouse], on_scroll? : @cmd.Emit[@common.Scroll], on_keydown? : @cmd.Emit[@common.Keyboard], on_keyup? : @cmd.Emit[@common.Keyboard], attrs? : Attrs, C) -> Html
 
@@ -336,6 +336,7 @@ pub fn Attrs::charset(Self, String) -> Self
 pub fn Attrs::checked(Self, Bool) -> Self
 pub fn Attrs::cite(Self, String) -> Self
 pub fn Attrs::class(Self, String) -> Self
+pub fn Attrs::closedby(Self, String) -> Self
 pub fn Attrs::color(Self, String) -> Self
 pub fn Attrs::colorspace(Self, String) -> Self
 pub fn Attrs::cols(Self, Int) -> Self

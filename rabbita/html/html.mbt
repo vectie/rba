@@ -1980,6 +1980,9 @@ pub fn[C : IsChildren] tfoot(
 /// 
 /// - `open`: indicates whether the dialog is open or closed by default.
 /// 
+/// - `closedby`: emits the limited-support browser `closedby` attribute.
+///   Rabbita does not polyfill dismissal behavior.
+///
 /// # Messages
 /// 
 /// - `close`: triggered when the dialog is closed. 
@@ -2034,6 +2037,7 @@ pub fn[C : IsChildren] dialog(
   title? : String,
   hidden? : Bool,
   open? : Bool,
+  closedby? : String,
   on_close? : Emit[String],
   on_cancel? : Cmd,
   attrs? : Attrs,
@@ -2043,6 +2047,7 @@ pub fn[C : IsChildren] dialog(
   push_title(title, attrs)
   push_hidden(hidden, attrs)
   push_open(open, attrs)
+  push_closedby(closedby, attrs)
   push_close(on_close, attrs)
   push_cancel(on_cancel, attrs)
   push_style(style, attrs)
