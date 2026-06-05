@@ -5,4 +5,8 @@ import {
   "moonbit-community/warren/configs",
 }
 
+import {
+  "moonbitlang/async",
+} for "test"
+
 supported_targets = "native"
