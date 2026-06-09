@@ -7,12 +7,12 @@ pub(all) enum VirtualFs {
   FileMapping(SourcePath)
   DirectoryContent(Map[String, VirtualFs])
   FileContent(String)
-}
+} derive(Debug)
 
 ///|
 struct VirtualFileSystem {
   roots : Map[String, VirtualFs]
-}
+} derive(Debug)
 
 ///|
 #as_free_fn

@@ -15,13 +15,6 @@ pub fn debug_log(String, String) -> Unit
 // Errors
 
 // Types and methods
-type DevEvent
-
-type Dist derive(Eq)
-
-type Model
-
-type Msg
 
 // Type aliases
 
