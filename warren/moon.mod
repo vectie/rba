@@ -1,6 +1,6 @@
 name = "moonbit-community/warren"
 
-version = "0.1.3"
+version = "0.1.5"
 
 import {
   "moonbitlang/async@0.17.0",
@@ -10,11 +10,11 @@ import {
 
 readme = "README.md"
 
-repository = ""
+repository = "https://github.com/moonbit-community/rabbita"
 
 license = "Apache-2.0"
 
-keywords = [ ]
+keywords = [ "live reload", "web", "rabbita" ]
 
 description = "Tool for discovering and developing Rabbita applications"
 
