@@ -1,35 +1,4 @@
 ///|
-#cfg(not(platform="windows"))
-fn shell_quote(s : String) -> String {
-  let escaped = s.replace_all(old="'", new="'\"'\"'")
-  "'" + escaped + "'"
-}
-
-///|
-#cfg(platform="windows")
-fn shell_quote(s : String) -> String {
-  let escaped = s.replace_all(old="\"", new="\"\"")
-  "\"" + escaped + "\""
-}
-
-///|
-#borrow(command)
-extern "C" fn system(command : Bytes) -> Int = "system"
-
-///|
-fn encode_c_string(s : String) -> Bytes {
-  let bytes = @utf8.encode(s).to_array()
-  bytes.push(b'\x00')
-  Bytes::from_array(bytes)
-}
-
-///|
-fn run_command(command : String) -> Int {
-  let terminated = encode_c_string(command)
-  system(terminated)
-}
-
-///|
 pub fn log(tag : String, msg : String) -> Unit {
   let display_tag = if tag.length() < 7 {
     let prefix = " ".repeat(7 - tag.length())
@@ -59,41 +28,24 @@ pub fn log(tag : String, msg : String) -> Unit {
     "dev" => "\u001b[36m"
     _ => "\u001b[32m"
   }
-  let command = if use_color {
-    let msg_format = if tag == "info" { "\u001b[37m%s\u001b[0m" } else { "%s" }
-    let format = shell_quote(
-      "\u001b[90m%s\u001b[0m \{tag_color}%s\u001b[0m: \{msg_format}\n",
-    )
-    let quoted_tag = shell_quote(display_tag)
-    let quoted_msg = shell_quote(msg)
-    "printf \{format} \"$(date '+%H:%M')\" \{quoted_tag} \{quoted_msg}"
-  } else {
-    let format = shell_quote("%s %s: %s\n")
-    let quoted_tag = shell_quote(display_tag)
-    let quoted_msg = shell_quote(msg)
-    "printf \{format} \"$(date '+%H:%M')\" \{quoted_tag} \{quoted_msg}"
-  }
-  let status = run_command(command)
-  if status != 0 {
-    let now = @env.now()
-    let total_minutes = now / 60000UL
-    let minutes = (total_minutes % 60UL).to_int()
-    let hours = (total_minutes / 60UL % 24UL).to_int()
-    let hh = if hours < 10 { "0\{hours}" } else { hours.to_string() }
-    let mm = if minutes < 10 { "0\{minutes}" } else { minutes.to_string() }
-    let time = "\{hh}:\{mm}"
-    if use_color {
-      let reset = "\u001b[0m"
-      let display_msg = if tag == "info" {
-        "\u001b[37m\{msg}\{reset}"
-      } else {
-        msg
-      }
-      println(
-        "\u001b[90m\{time}\{reset} \{tag_color}\{display_tag}\{reset}: \{display_msg}",
-      )
+  let now = @env.now()
+  let total_minutes = now / 60000UL
+  let minutes = (total_minutes % 60UL).to_int()
+  let hours = (total_minutes / 60UL % 24UL).to_int()
+  let hh = if hours < 10 { "0\{hours}" } else { hours.to_string() }
+  let mm = if minutes < 10 { "0\{minutes}" } else { minutes.to_string() }
+  let time = "\{hh}:\{mm}"
+  if use_color {
+    let reset = "\u001b[0m"
+    let display_msg = if tag == "info" {
+      "\u001b[37m\{msg}\{reset}"
     } else {
-      println("\{time} \{display_tag}: \{msg}")
+      msg
     }
+    println(
+      "\u001b[90m\{time}\{reset} \{tag_color}\{display_tag}\{reset}: \{display_msg}",
+    )
+  } else {
+    println("\{time} \{display_tag}: \{msg}")
   }
 }
