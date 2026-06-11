@@ -8,14 +8,30 @@ using @devhub {type BroadcastMsg, type Devhub}
 using @string {parse_int}
 
 ///|
-let html_template =
+let shell_html_template =
   $|<!DOCTYPE html>
   $|<html lang="en">
   $|<head>
   $|    <meta charset="UTF-8">
   $|    <meta name="viewport" content="width=device-width, initial-scale=1.0">
   $|    <title>warren dev</title>
-  $|\{html_patch}
+  #|    <script src="/warren_devtool.js" type="module"></script>
+  #|    <link rel="stylesheet" type="text/css" href="/warren_devtool.css"></link>
+  $|</head>
+  $|<body>
+  #|    <div id="warren-devtool"></div>
+  $|</body>
+  $|</html>
+
+///|
+let preview_html_template =
+  $|<!DOCTYPE html>
+  $|<html lang="en">
+  $|<head>
+  $|    <meta charset="UTF-8">
+  $|    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  $|    <title>warren preview</title>
+  $|    \{preview_assets_patch}
   $|</head>
   $|<body>
   $|    <div id="app"></div>
@@ -23,25 +39,22 @@ let html_template =
   $|</html>
 
 ///|
-let html_patch =
+let preview_assets_patch =
+  #|<base href="/">
   #|<script src="/index.js" type="module"></script>
-  #|<script src="/warren_dev.js"></script>
   #|<link rel="stylesheet" type="text/css" href="/styles.css"></link>
 
 ///|
-let dev_script =
-  #|let warrenSocket;
-  #|function connectWarrenDevSocket() {
-  #|  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  #|  warrenSocket = new WebSocket(`${protocol}//${location.host}/__warren/events`);
-  #|  warrenSocket.addEventListener("message", event => {
-  #|    if (event.data === "reload") location.reload();
-  #|  });
-  #|  warrenSocket.addEventListener("close", () => {
-  #|    setTimeout(connectWarrenDevSocket, 1000);
-  #|  });
-  #|}
-  #|connectWarrenDevSocket();
+let preview_base_patch =
+  #|<base href="/">
+
+///|
+let preview_entry_script_patch =
+  #|<script src="/index.js" type="module"></script>
+
+///|
+let preview_stylesheet_patch =
+  #|<link rel="stylesheet" type="text/css" href="/styles.css"></link>
 
 ///|
 async fn main {
@@ -140,17 +153,53 @@ async fn main {
 }
 
 ///|
-async fn inject_html(path : SourcePath, vfs : @vfs.VirtualFileSystem) -> Unit {
-  let html = @fs.read_file(path.to_string()).text()
+fn inject_preview_assets(html : String) -> String {
+  let patch = preview_assets_for(html)
   let tag = match html.rev_find("</head>") {
     None => html.rev_find("</html>")
     x => x
   }
-  guard tag is Some(p) else {
-    log("warn", "No </head> or </html> tag in index.html")
+  match tag {
+    Some(p) => (html[:p] + patch + html[p:]).to_owned()
+    None => {
+      log("warn", "No </head> or </html> tag in index.html")
+      if html.has_suffix("\n") {
+        html + patch
+      } else {
+        html + "\n" + patch
+      }
+    }
   }
-  let s = (html[:p] + html_patch + html[p:]).to_owned()
-  vfs.mount("/index.html", FileContent(s))
+}
+
+///|
+fn preview_assets_for(html : String) -> String {
+  let base = if html.contains("<base ") {
+    ""
+  } else {
+    preview_base_patch + "\n"
+  }
+  let script = if html.contains("index.js") {
+    ""
+  } else {
+    preview_entry_script_patch + "\n"
+  }
+  let stylesheet = if html.contains("styles.css") {
+    ""
+  } else {
+    preview_stylesheet_patch + "\n"
+  }
+  base + script + stylesheet
+}
+
+///|
+fn build_failure_diagnostics(output : String, code : Int) -> String {
+  let output = output.trim().to_owned()
+  if output == "" {
+    "moon build exited with code \{code}."
+  } else {
+    output + "\n\nmoon build exited with code \{code}."
+  }
 }
 
 ///|
@@ -171,15 +220,26 @@ async fn dev_server(
     vfs.mount("/", DirectoryMapping(SourcePath::new(dir)))
     let files = @fs.readdir(dir)
     if files.contains("index.html") {
-      inject_html(
-        SourcePath::new(Path::join(dir, "index.html").to_string()),
-        vfs,
+      let html = @fs.read_file(Path::join(dir, "index.html").to_string()).text()
+      vfs.mount(
+        "/__warren/preview/index.html",
+        FileContent(inject_preview_assets(html)),
       )
     } else {
-      vfs.mount("/index.html", FileContent(html_template))
+      vfs.mount(
+        "/__warren/preview/index.html",
+        FileContent(preview_html_template),
+      )
     }
+  } else {
+    vfs.mount(
+      "/__warren/preview/index.html",
+      FileContent(preview_html_template),
+    )
   }
-  vfs.mount("/warren_dev.js", FileContent(dev_script))
+  vfs.mount("/index.html", FileContent(shell_html_template))
+  vfs.mount("/warren_devtool.js", FileContent(embbed_devtool_js))
+  vfs.mount("/warren_devtool.css", FileContent(embbed_devtool_css))
 
   @async.with_task_group <| group => {
     let hub = Devhub(port, vfs)
@@ -191,6 +251,8 @@ async fn dev_server(
       let (stdin, close_stdin) = @process.write_to_process()
       close_stdin.close()
       @fs.rmdir(target_dir, recursive=true)
+      hub.broadcast(BroadcastMsg::Building)
+      log("warren", "Building...")
       let code = @process.run(
         "moon",
         ["build", main_pkg_dir, "--target", "js", "--target-dir", target_dir],
@@ -200,8 +262,11 @@ async fn dev_server(
       )
 
       defer reader.close()
+      let diagnostics = StringBuilder::new()
       while reader.read_until("\n") is Some(line) {
         if line != "" {
+          diagnostics.write_string(line)
+          diagnostics.write_string("\n")
           log("moon", line)
         }
       }
@@ -234,6 +299,11 @@ async fn dev_server(
         hub.broadcast(BroadcastMsg::Reload)
         log("warren", "Changes detected. Reloading...")
       } else {
+        hub.broadcast(
+          BroadcastMsg::BuildFailed(
+            build_failure_diagnostics(diagnostics.to_string(), code),
+          ),
+        )
         log("error", "moon exited with code \{code}.")
       }
 

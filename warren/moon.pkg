@@ -13,6 +13,8 @@ import {
 
 supported_targets = "native"
 
+warnings = "-text_segment_excceed"
+
 options(
   "is-main": true,
 )
