@@ -253,22 +253,31 @@ async fn dev_server(
       @fs.rmdir(target_dir, recursive=true)
       hub.broadcast(BroadcastMsg::Building)
       log("warren", "Building...")
-      let code = @process.run(
-        "moon",
-        ["build", main_pkg_dir, "--target", "js", "--target-dir", target_dir],
-        stdin~,
-        stdout=out,
-        stderr=out,
-      )
 
       defer reader.close()
       let diagnostics = StringBuilder::new()
-      while reader.read_until("\n") is Some(line) {
-        if line != "" {
-          diagnostics.write_string(line)
-          diagnostics.write_string("\n")
-          log("moon", line)
+      let code = @async.with_task_group <| build_group => {
+        let exit_code = build_group.spawn(() => {
+          @process.run(
+            "moon",
+            [
+              "build", main_pkg_dir, "--target", "js", "--target-dir",
+              target_dir,
+            ],
+            stdin~,
+            stdout=out,
+            stderr=out,
+          )
+        })
+
+        while reader.read_until("\n") is Some(line) {
+          if line != "" {
+            diagnostics.write_string(line)
+            diagnostics.write_string("\n")
+            log("moon", line)
+          }
         }
+        exit_code.wait()
       }
 
       if code == 0 {
