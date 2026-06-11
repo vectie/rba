@@ -261,8 +261,7 @@ async fn dev_server(
           @process.run(
             "moon",
             [
-              "build", main_pkg_dir, "--target", "js", "--target-dir",
-              target_dir,
+              "build", main_pkg_dir, "--target", "js", "--target-dir", target_dir,
             ],
             stdin~,
             stdout=out,
