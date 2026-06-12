@@ -24,7 +24,18 @@ This project was previously named `Rabbit-TEA` and is now renamed to `rabbita` .
 
 ## Quick Start
 
-Use the [rabbita-template](https://github.com/moonbit-community/rabbita-template) to get started quickly.
+You can try it in the [playground](https://moonbit-community.github.io/rabbita/playground/) or set up a project in the terminal.
+
+Make sure you have installed [`moon`](https://www.moonbitlang.com/download/) first:
+
+```
+moon install moonbit-community/warren
+warren new my-project
+cd my-project
+warren dev
+```
+
+See [Warren](./warren/README.md) for more information.
 
 ## Examples
 
@@ -142,4 +153,9 @@ by the garbage collector.
 
 # Used By
 
-[mooncakes.io](https://mooncakes.io)
+- [mooncakes.io](https://mooncakes.io)
+- [moonbitlang.com](https://moonbitlang.com)
+- [moonbit-community.github.io/rabbita](https://moonbit-community.github.io/rabbita)
+- [bingque](https://www.bingque.com)
+- [caimeo.space](http://caimeox.github.io/symweb)
+
