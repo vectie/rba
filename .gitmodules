@@ -1,3 +1,0 @@
-[submodule "rabbita-template"]
-	path = templates/rabbita-template
-	url = git@github.com:moonbit-community/rabbita-template.git
