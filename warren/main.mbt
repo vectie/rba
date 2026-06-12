@@ -91,6 +91,22 @@ async fn main {
         ],
         about="Build a release static site into ./dist by default.",
       ),
+      Command(
+        "new",
+        positionals=[
+          PositionArg(
+            "dir_name",
+            about="Directory name for the new Warren project.",
+          ),
+        ],
+        options=[
+          OptionArg(
+            "template",
+            about="Project template to use. Default: default. Available: default, minimized.",
+          ),
+        ],
+        about="Create a minimal Rabbita project.",
+      ),
     ],
     about="Preview and build MoonBit web applications.",
   ).parse()
@@ -148,13 +164,26 @@ async fn main {
         dist_dir=SourcePath::new(dist_dir),
       )
     }
+    "new" =>
+      match submatches.values.get("dir_name") {
+        Some([dir]) => {
+          let template = match submatches.values.get("template") {
+            Some([name]) => name
+            _ => default_new_project_template
+          }
+          new_project(dir, template)
+        }
+        _ => println("Usage: warren new <dir_name> [--template <template>]")
+      }
     _ => ()
   }
 }
 
 ///|
 fn inject_preview_assets(html : String) -> String {
+  let html = inject_preview_base(html)
   let patch = preview_assets_for(html)
+  guard patch != "" else { html }
   let tag = match html.rev_find("</head>") {
     None => html.rev_find("</html>")
     x => x
@@ -173,12 +202,20 @@ fn inject_preview_assets(html : String) -> String {
 }
 
 ///|
-fn preview_assets_for(html : String) -> String {
-  let base = if html.contains("<base ") {
-    ""
-  } else {
-    preview_base_patch + "\n"
+fn inject_preview_base(html : String) -> String {
+  guard !html.contains("<base ") else { html }
+  let head_end = match html.find("<head>") {
+    Some(p) => Some(p + "<head>".length())
+    None => None
   }
+  match head_end {
+    Some(p) => (html[:p] + "\n" + preview_base_patch + html[p:]).to_owned()
+    None => preview_base_patch + "\n" + html
+  }
+}
+
+///|
+fn preview_assets_for(html : String) -> String {
   let script = if html.contains("index.js") {
     ""
   } else {
@@ -189,7 +226,32 @@ fn preview_assets_for(html : String) -> String {
   } else {
     preview_stylesheet_patch + "\n"
   }
-  base + script + stylesheet
+  script + stylesheet
+}
+
+///|
+test "inject_preview_assets puts base before relative assets" {
+  let html =
+    $|<html>
+    $|<head>
+    $|    <link rel="stylesheet" type="text/css" href="./styles.css"></link>
+    $|    <script src="./index.js" type="module"></script>
+    $|</head>
+    $|<body></body>
+    $|</html>
+  inspect(
+    inject_preview_assets(html),
+    content=(
+      $|<html>
+      $|<head>
+      #|<base href="/">
+      $|    <link rel="stylesheet" type="text/css" href="./styles.css"></link>
+      $|    <script src="./index.js" type="module"></script>
+      $|</head>
+      $|<body></body>
+      $|</html>
+    ),
+  )
 }
 
 ///|
