@@ -6,6 +6,8 @@ import {
   "moonbit-community/rabbita/html",
   "moonbit-community/rabbita/sub",
   "moonbit-community/rabbita/url",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -23,6 +25,20 @@ pub fn[Model, Msg] cell_with_emit(model~ : Model, update~ : (@cmd.Emit[Msg], Msg
 pub fn delay(@cmd.Cmd, Int) -> @cmd.Cmd
 
 pub fn effect(async () -> Unit noraise) -> @cmd.Cmd
+
+pub fn moonsuite_product_cache_path() -> String
+
+pub fn moonsuite_product_home() -> RabbitaMoonSuiteProductHome
+
+pub fn moonsuite_product_id() -> String
+
+pub fn moonsuite_product_runtime_path() -> String
+
+pub fn moonsuite_product_service_path() -> String
+
+pub fn moonsuite_product_state_path() -> String
+
+pub fn moonsuite_product_tmp_path() -> String
 
 pub fn new(Cell) -> App
 
@@ -52,6 +68,15 @@ pub fn App::with_route(Self, url_changed? : @cmd.Emit[@url.Url], url_request? : 
 
 type Cell
 pub fn Cell::view(Self) -> @html.Html
+
+pub(all) struct RabbitaMoonSuiteProductHome {
+  product_id : String
+  state_path : String
+  service_path : String
+  runtime_path : String
+  cache_path : String
+  tmp_path : String
+} derive(Eq, ToJson, @debug.Debug, @json.FromJson)
 
 // Type aliases
 pub using @cmd {type Cmd}

@@ -8,6 +8,7 @@ import {
   "moonbit-community/rabbita/internal/key",
   "moonbitlang/core/queue",
   "moonbitlang/core/ref",
+  "moonbitlang/core/json",
   "moonbit-community/rabbita/js",
 }
 
