@@ -15,27 +15,27 @@ pub fn moonsuite_product_id() -> String {
 
 ///|
 pub fn moonsuite_product_state_path() -> String {
-  ".moonsuite/products/rabbita"
+  @moonsuite.product_dir("", moonsuite_product_id())
 }
 
 ///|
 pub fn moonsuite_product_service_path() -> String {
-  "\{moonsuite_product_state_path()}/service.json"
+  @moonsuite.product_service_path("", moonsuite_product_id())
 }
 
 ///|
 pub fn moonsuite_product_runtime_path() -> String {
-  "\{moonsuite_product_state_path()}/runtime"
+  @moonsuite.product_artifact("", moonsuite_product_id(), "runtime")
 }
 
 ///|
 pub fn moonsuite_product_cache_path() -> String {
-  "\{moonsuite_product_state_path()}/cache"
+  @moonsuite.product_artifact("", moonsuite_product_id(), "cache")
 }
 
 ///|
 pub fn moonsuite_product_tmp_path() -> String {
-  ".tmp/products/rabbita"
+  @moonsuite.product_tmp_dir("", moonsuite_product_id())
 }
 
 ///|
