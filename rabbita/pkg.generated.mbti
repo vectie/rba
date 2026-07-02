@@ -28,17 +28,29 @@ pub fn effect(async () -> Unit noraise) -> @cmd.Cmd
 
 pub fn moonsuite_product_cache_path() -> String
 
+pub fn moonsuite_product_cache_path_for_workspace_root(String) -> String
+
 pub fn moonsuite_product_home() -> RabbitaMoonSuiteProductHome
+
+pub fn moonsuite_product_home_for_workspace_root(String) -> RabbitaMoonSuiteProductHome
 
 pub fn moonsuite_product_id() -> String
 
 pub fn moonsuite_product_runtime_path() -> String
 
+pub fn moonsuite_product_runtime_path_for_workspace_root(String) -> String
+
 pub fn moonsuite_product_service_path() -> String
+
+pub fn moonsuite_product_service_path_for_workspace_root(String) -> String
 
 pub fn moonsuite_product_state_path() -> String
 
+pub fn moonsuite_product_state_path_for_workspace_root(String) -> String
+
 pub fn moonsuite_product_tmp_path() -> String
+
+pub fn moonsuite_product_tmp_path_for_workspace_root(String) -> String
 
 pub fn new(Cell) -> App
 
