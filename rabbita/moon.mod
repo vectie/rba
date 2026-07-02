@@ -13,7 +13,7 @@ keywords = [ "functional", "html", "UI", "web", "TEA" ]
 description = "functional Web UI framework for MoonBit"
 
 import {
-  "vectie/moonlib@0.1.3",
+  "vectie/moonlib@0.1.4",
 }
 
 preferred_target = "js"
